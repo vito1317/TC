@@ -2,6 +2,8 @@ str c.str_0: ""
 str c.str_1: "%s/%s"
 str c.str_2: "/"
 str c.str_3: "%s"
+str c.str_4: "%s%s"
+str c.str_5: "%s/%s%s"
 
 ; string get_cwd(void) {
 f.get_cwd:
@@ -464,29 +466,285 @@ l.if_end_20:
     ; }
 l.if_end_19:
     ; string full_name = create_string("", full_name_len + 1);
+    push c.str_0
+    add  r3 r2 1
+    call f.create_string 2
+    mov  r3 rv  ; r3: full_name
     ; sprintf(full_name, "%s%s", new_name, ext_cstr);
+    push r3
+    push c.str_4
+    push a1
+    push r1
+    call f.sprintf 4
     ; current->dir = create_string(full_name, strlen(full_name));
+    push r3
+    push r3
+    call f.strlen 1
+    push rv
+    call f.create_string 2
+    save r0 rv
     ; break;
+    jmp  l.while_end_2 always
     ; }
 l.if_end_18:
     ; current = current->next;
+    add  r0 r0 size  ; size = sizeof(size_t), offset of next in StrNode struct
+    load r0 r0
     jmp  l.while_start_2 always
     ; }
 l.while_end_2:
     ; }
 l.if_end_17:
     ; string dir = get_file_dir(file);
+    push a0
+    call f.get_file_dir 1
+    mov  r0 rv  ; r0: dir
     ; string dir_cstr = dir != NULL ? dir : "";
+    cmpu r0 0
+    jmp  l.if_else_21 ne
+    mov  r1 c.str_0  ; r1: dir_cstr
+    jmp  l.if_end_21 always
+l.if_else_21:
+    mov  r1 r0  ; r1: dir_cstr
+l.if_end_21:
     ; string ext_cstr = file->extension != 0 ? (file->extension) : "";
+    add  r2 a0 size  ; size = sizeof(size_t), offset of extension in File struct
+    load r2 r2
+    cmpu r2 0
+    jmp  l.if_else_22 ne
+    mov  r2 c.str_0  ; r2: ext_cstr
+    jmp  l.if_end_22 always
+l.if_else_22:
+    mov  r2 r2  ; r2: ext_cstr
+l.if_end_22:
     ; size_t path_len = strlen(dir_cstr) + 1 + strlen(new_name);
+    push r1
+    call f.strlen 1
+    add  r3 rv 1
+    push a1
+    call f.strlen 1
+    add  r3 r3 rv  ; r3: path_len
     ; if (file->extension != 0) {
+    add  r4 a0 size  ; size = sizeof(size_t), offset of extension in File struct
+    load r4 r4
+    cmpu r4 0
+    jmp  l.if_end_23 eq
     ; path_len += strlen(ext_cstr);
+    push r2
+    call f.strlen 1
+    add  r3 r3 rv
     ; }
+l.if_end_23:
     ; string new_path = create_string("", path_len + 1);
+    push c.str_0
+    add  r4 r3 1
+    push r4
+    call f.create_string 2
+    mov  r4 rv  ; r4: new_path
     ; if (dir != NULL && strlen(dir_cstr) > 0) {
+    cmpu r0 0
+    jmp  l.if_else_24 eq
+    push r1
+    call f.strlen 1
+    cmpu rv 0
+    jmp  l.if_else_24 le
     ; sprintf(new_path, "%s/%s%s", dir_cstr, new_name, ext_cstr);
+    push r4
+    push c.str_5
+    push r1
+    push a1
+    push r2
+    call f.sprintf 5
+    jmp  l.if_end_24 always
     ; } else {
+l.if_else_24:
     ; sprintf(new_path, "%s%s", new_name, ext_cstr);
+    push r4
+    push c.str_4
+    push a1
+    push r2
+    call f.sprintf 4
     ; }
+l.if_end_24:
     ; file->path = create_string(new_path, strlen(new_path));
+    push r4
+    push r4
+    call f.strlen 1
+    push rv
+    call f.create_string 2
+    add  r5 a0 3 * size  ; size = sizeof(size_t), offset of path in File struct
+    save r5 rv
+; }
+
+; void normalize_path(File* file) {
+f.normalize_path:
+    ; a0: file
+    ; size_t path_len = strlen(file->path);
+    add  r0 a0 3 * size  ; size = sizeof(size_t), offset of path in File struct
+    load r0 r0
+    push r0
+    call f.strlen 1
+    mov  r0 rv  ; r0: path_len
+    ; string path_copy = create_string("", path_len + 1);
+    push c.str_0
+    add  r1 r0 1
+    call f.create_string 2
+    mov  r1 rv  ; r1: path_copy
+    ; strcpy(path_copy, file->path);
+    push r1
+    add  r2 a0 3 * size  ; size = sizeof(size_t), offset of path in File struct
+    load r2 r2
+    push r2
+    call f.strcpy 2
+    ; StrNode* dirs_head = NULL;
+    mov  r2 0  ; r2: dirs_head
+    ; StrNode* dirs_tail = NULL;
+    mov  r3 0  ; r3: dirs_tail
+    ; size_t start = 0;
+    mov  r4 0  ; r4: start
+    ; if (path_len > 0 && path_copy[0] == '/') {
+    cmpu r0 0
+    jmp  l.if_end_25 le
+    load byte r5 r1
+    cmpu byte r5 47  ; '/' == 47
+    jmp  l.if_end_25 ne
+    ; StrNode* node = (StrNode*)alloc_memory(sizeof(StrNode));
+    push 2 * size  ; size = sizeof(size_t), size of StrNode struct
+    call f.alloc_memory 1
+    mov  r5 rv  ; r5: node
+    ; node->dir = create_string("/", 1);
+    push c.str_2
+    push 1
+    call f.create_string 2
+    save r5 rv
+    ; node->next = 0;
+    add  r6 r5 size  ; size = sizeof(size_t), offset of next in StrNode struct
+    save r6 0
+    ; dirs_head = node;
+    mov  r2 r5
+    ; dirs_tail = node;
+    mov  r3 r5
+    ; start = 1;
+    mov  r4 1
+    ; }
+l.if_end_25:
+    ; size_t i = start;
+    mov  r5 r4  ; r5: i
+    ; while (i <= path_len) {
+l.while_start_3:
+    cmpu r5 r0
+    jmp  l.while_end_3 gt
+    ; if (i == path_len || path_copy[i] == '/') {
+    cmpu r5 r0
+    jmp  l.if_end_26 ne
+    add  r6 r1 r5
+    load byte r6 r6
+    cmpu byte r6 47  ; '/' == 47
+    jmp  l.if_end_26 ne
+    ; if (i > start) {
+        cmpu r5 r4
+        jmp  l.if_end_27 le
+        ; size_t comp_len = i - start;
+        sub  r6 r5 r4  ; r6: comp_len
+        ; char component[256];
+        mov  r7 sp  ; r7: component
+        push custom 256 0
+        ; strncpy(component, path_copy + start, comp_len);
+        push r7
+        add  r8 r1 r4
+        push r8
+        push r6
+        call f.strncpy 3
+        ; component[comp_len] = '\0';
+        add  r8 r7 r6
+        save byte r8 0  ; '\0' == 0
+        ; if (strcmp(component, "..") == 0) {
+            ; if (dirs_tail != NULL && dirs_tail != dirs_head) {
+                ; if (strcmp(dirs_tail->dir, "..") == 0) {
+                    ; StrNode* node = (StrNode*)alloc_memory(sizeof(StrNode));
+                    ; node->dir = create_string("..", 2);
+                    ; node->next = 0;
+                    ; dirs_tail->next = node;
+                    ; dirs_tail = node;
+                ; } else {
+                    ; StrNode* prev = dirs_head;
+                    ; while (prev != NULL && prev->next != dirs_tail) {
+                        ; prev = prev->next;
+                    ; }
+                    ; if (prev != NULL) {
+                        ; prev->next = 0;
+                        ; dirs_tail = prev;
+                    ; }
+                ; }
+            ; } else if (dirs_head == NULL) {
+                ; StrNode* node = (StrNode*)alloc_memory(sizeof(StrNode));
+                ; node->dir = create_string("..", 2);
+                ; node->next = 0;
+                ; dirs_head = node;
+                ; dirs_tail = node;
+            ; }
+        ; } else if (strlen(component) > 0) {
+            ; StrNode* node = (StrNode*)alloc_memory(sizeof(StrNode));
+            ; node->dir = create_string(component, comp_len);
+            ; node->next = 0;
+            ; if (dirs_tail != NULL) {
+                ; (dirs_tail)->next = node;
+            ; }
+            ; dirs_tail = node;
+            ; if (dirs_head == NULL) {
+                ; dirs_head = node;
+            ; }
+        ; }
+    ; }
+l.if_end_27:
+    ; start = i + 1;
+    add  r4 r5 1
+    ; }
+l.if_end_26:
+    ; i++;
+    add  r5 r5 1
+    ; }
+    jmp  l.while_start_3 always
+l.while_end_3:
+    ; file->dirs = dirs_head;
+    ; if (dirs_tail != NULL) {
+    ; string dot = strrchr(dirs_tail->dir, '.');
+    ; if (dot != NULL && dot != dirs_tail->dir) {
+    ; size_t name_len = (size_t)(dot - dirs_tail->dir);
+    ; file->name = create_string(dirs_tail->dir, name_len);
+    ; file->extension = create_string(dot, strlen(dot));
+    ; } else {
+    ; file->name = dirs_tail->dir;
+    ; file->extension = 0;
+    ; }
+    ; } else {
+    ; file->name = 0;
+    ; file->extension = 0;
+    ; }
+    ; size_t full_path_len = 0;
+    ; StrNode* current = dirs_head;
+    ; size_t node_count = 0;
+    ; while (current != NULL) {
+    ; full_path_len += strlen(current->dir);
+    ; node_count++;
+    ; current = current->next;
+    ; }
+    ; if (node_count > 1) {
+    ; full_path_len += (node_count - 1);
+    ; }
+    ; string full_path = create_string("", full_path_len + 1);
+    ; full_path[0] = '\0';
+    ; current = dirs_head;
+    ; bool is_first = true;
+    ; while (current != NULL) {
+    ; if (!is_first && strcmp(current->dir, "/") != 0) {
+    ; if (strlen(full_path) > 0 && full_path[strlen(full_path) - 1] != '/') {
+    ; strcat(full_path, "/");
+    ; }
+    ; }
+    ; strcat(full_path, current->dir);
+    ; is_first = false;
+    ; current = current->next;
+    ; }
+    ; file->path = create_string(full_path, strlen(full_path));
 ; }

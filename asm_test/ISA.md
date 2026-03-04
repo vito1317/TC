@@ -23,7 +23,7 @@ instruction ::= "add"  [ size ] target source source  # target = source + source
               | "cmps" [ size ] source source  # compare source and source, set condition flags, signed compare
               | "jmp"  label_name condition  # jump to label_name if condition is true
               | syntactic_sugar
-syntactic_sugar ::= "call" func_name digit # call function at func_name
+syntactic_sugar ::= "call" func_name immediate # call function at func_name
                   | "ret"  # return from function
                   | "push" [ size ] source     # push source onto stack
                   | "pop"  [ size ] target     # pop from stack into target
@@ -34,7 +34,7 @@ func_name ::= "f." identifier
 target ::= register
 source ::= register | immediate | const_name
 condition ::= "eq" | "ne" | "gt" | "lt" | "ge" | "le" | "always" | "never"
-size ::= "byte" | "half" | "word" | "dword"  # 1 byte, 2 bytes, 4 bytes, 8 bytes
+size ::= "byte" | "half" | "word" | "dword" | "custom" immediate  # 1 byte, 2 bytes, 4 bytes, 8 bytes, or custom size in bytes
 string_literal ::= '"' { character } '"'
 number_literal ::= digit { digit }
 immediate ::= number_literal
