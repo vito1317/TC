@@ -1,5 +1,20 @@
 #include "file.h"
 
+static void append_path_component(char* base, char** ptr, const char* component, bool is_first) {
+    if (!is_first && strcmp(component, "/") != 0) {
+        // Add separator before non-root components
+        if (*ptr > base && *(*ptr - 1) != '/') {
+            *(*ptr)++ = '/';
+            **ptr = '\0';
+        }
+    }
+
+    size_t len = strlen(component);
+    memcpy(*ptr, component, len);
+    *ptr += len;
+    **ptr = '\0';
+}
+
 string get_cwd(void) {
 #if PLATFORM == 1
     return _getcwd(NULL, 0);  // MSVC
@@ -88,18 +103,7 @@ string get_file_dir(File* path) {
     bool first = true;
     while (current != NULL) {
         if (current->next != NULL) {  // Not the last element
-            if (!first && strcmp(current->dir, "/") != 0) {
-                // Add separator before non-root components
-                if (ptr > dir_path && *(ptr - 1) != '/') {
-                    *ptr++ = '/';
-                    *ptr = '\0';
-                }
-            }
-
-            size_t len = strlen(current->dir);
-            memcpy(ptr, current->dir, len);
-            ptr += len;
-            *ptr = '\0';
+            append_path_component(dir_path, &ptr, current->dir, first);
             first = false;
         }
         current = current->next;
@@ -315,17 +319,7 @@ void normalize_path(File* file) {
     current = dirs_head;
     bool is_first = true;
     while (current != NULL) {
-        if (!is_first && strcmp(current->dir, "/") != 0) {
-            // Add separator before non-root components
-            if (ptr > full_path && *(ptr - 1) != '/') {
-                *ptr++ = '/';
-                *ptr = '\0';
-            }
-        }
-        size_t len = strlen(current->dir);
-        memcpy(ptr, current->dir, len);
-        ptr += len;
-        *ptr = '\0';
+        append_path_component(full_path, &ptr, current->dir, is_first);
         is_first = false;
         current = current->next;
     }

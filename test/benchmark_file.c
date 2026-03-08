@@ -33,7 +33,8 @@ int main() {
     // Benchmark get_file_dir
     start = clock();
     for (int i = 0; i < 100; i++) {
-        string dir = get_file_dir(file);
+        volatile string dir = get_file_dir(file);
+        (void)dir;
     }
     end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
