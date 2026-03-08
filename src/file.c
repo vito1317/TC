@@ -74,13 +74,14 @@ string absolute_path(string path) {
     return create_string(abs_path, total_len);
 }
 
-string get_file_dir(File* path) {
-    if (path->dirs == NULL) return 0;
+string get_file_dir(File* file) {
+    if (file == NULL) return 0;
+    if (file->dirs == NULL) return 0;
 
     // Calculate total length needed
     size_t total_len = 0;
     size_t node_count = 0;
-    StrNode* current = path->dirs;
+    StrNode* current = file->dirs;
     while (current != NULL) {
         if (current->next != NULL) {  // Not the last element (which is the filename)
             size_t dir_len = strlen(current->dir);
@@ -101,7 +102,7 @@ string get_file_dir(File* path) {
     char* ptr = dir_path;
     *ptr = '\0';
 
-    current = path->dirs;
+    current = file->dirs;
     bool first = true;
     while (current != NULL) {
         if (current->next != NULL) {  // Not the last element
@@ -114,8 +115,19 @@ string get_file_dir(File* path) {
     return create_string(dir_path, strlen(dir_path));
 }
 
-string get_full_path(File* path) {
-    return path->path;
+string get_full_path(File* file) {
+    if (file == NULL) return 0;
+    return file->path;
+}
+
+string get_file_name(File* file) {
+    if (file == NULL) return 0;
+    return file->name;
+}
+
+string get_file_extension(File* file) {
+    if (file == NULL) return 0;
+    return file->extension;
 }
 
 void change_file_extension(File* file, const string new_extension) {

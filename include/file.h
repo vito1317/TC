@@ -19,8 +19,10 @@ typedef struct File {
 string get_cwd(void);
 File* create_file(const string path);
 string absolute_path(string path);
-string get_file_dir(File* path);
-string get_full_path(File* path);
+string get_file_dir(File* file);
+string get_full_path(File* file);
+string get_file_name(File* file);
+string get_file_extension(File* file);
 void change_file_extension(File* file, const string new_extension);
 void normalize_path(File* file);
 
