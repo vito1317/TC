@@ -23,10 +23,8 @@ int main(int argc, char* argv[]) {
 
     string source_file = NULL;
     string output_path = NULL;
-    bool o_compiled = false;
     bool o_ast = false;
-    bool o_lexer = false;
-    bool o_sym = false;
+    bool o_token = false;
 
     // Parse arguments
     for (int i = 1; i < argc; i++) {
@@ -34,10 +32,10 @@ int main(int argc, char* argv[]) {
             // It's a flag
             for (int j = 1; argv[i][j] != '\0'; j++) {
                 switch (argv[i][j]) {
-                    case 'o': o_compiled = true; break;
+                    case 'o': fprintf(stderr, "Error: Option '-o' is not yet implemented.\n"); return 1;
                     case 'a': o_ast = true; break;
-                    case 'l': o_lexer = true; break;
-                    case 's': o_sym = true; break;
+                    case 'l': o_token = true; break;
+                    case 's': fprintf(stderr, "Error: Option '-s' is not yet implemented.\n"); return 1;
                     case 'h': print_usage(argv[0]); return 0;
                     default:
                         fprintf(stderr, "Unknown option: -%c\n", argv[i][j]);
@@ -65,15 +63,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (o_compiled) {
-        printf("Warning: Option '-o' (Output compiled result) is not yet implemented.\n");
-    }
-    if (o_sym) {
-        printf("Warning: Option '-s' (Output symbol table) is not yet implemented.\n");
-    }
-
     // Call parse_file with the appropriate flags
-    parse_file(source_file, output_path, o_lexer, o_ast);
+    parse_file(source_file, output_path, o_token, o_ast);
 
     return 0;
 }
