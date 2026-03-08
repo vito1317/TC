@@ -24,7 +24,6 @@ string get_file_extension(File* path);
 string get_file_dir(File* path);
 string get_full_path(File* path);
 void change_file_extension(File* file, const string new_extension);
-void change_file_name(File* file, const string new_name);
 void normalize_path(File* file);
 
 #endif  // FILE_H
