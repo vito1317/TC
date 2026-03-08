@@ -128,46 +128,6 @@ void change_file_extension(File* file, const string new_extension) {
     file->path = create_string(new_path, strlen(new_path));
 }
 
-void change_file_name(File* file, const string new_name) {
-    file->name = new_name;
-
-    // Update the last node in dirs list
-    if (file->dirs != NULL) {
-        StrNode* current = file->dirs;
-
-        while (current != NULL) {
-            if (current->next == NULL) {
-                // This is the last node - update it
-                string ext_cstr = file->extension != NULL ? file->extension : "";
-                size_t full_name_len = strlen(new_name);
-                if (file->extension != NULL) full_name_len += strlen(ext_cstr);
-
-                string full_name = create_string("", full_name_len + 1);
-                sprintf(full_name, "%s%s", new_name, ext_cstr);
-                current->dir = create_string(full_name, strlen(full_name));
-                break;
-            }
-            current = current->next;
-        }
-    }
-
-    // Rebuild the full path
-    string dir = get_file_dir(file);
-    string dir_cstr = dir != NULL ? dir : "";
-    string ext_cstr = file->extension != NULL ? (file->extension) : "";
-
-    size_t path_len = strlen(dir_cstr) + 1 + strlen(new_name);
-    if (file->extension != NULL) path_len += strlen(ext_cstr);
-
-    string new_path = create_string("", path_len + 1);
-    if (dir != NULL && strlen(dir_cstr) > 0)
-        sprintf(new_path, "%s/%s%s", dir_cstr, new_name, ext_cstr);
-    else
-        sprintf(new_path, "%s%s", new_name, ext_cstr);
-
-    file->path = create_string(new_path, strlen(new_path));
-}
-
 void normalize_path(File* file) {
     size_t path_len = strlen(file->path);
 
