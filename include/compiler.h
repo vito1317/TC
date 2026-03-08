@@ -11,6 +11,6 @@ void string_append(string dest, const size_t dest_length, const string src, cons
 string read_source(FILE* file, size_t* length);
 void output_token(FILE* file, Lexer* lexer);
 void output_ast(FILE* file, Lexer* lexer, Parser* parser);
-void parse_file(const string name, bool o_token, bool o_ast);
+void parse_file(const string source_name, const string output_path, bool o_token, bool o_ast);
 
 #endif  // COMPILER_H
