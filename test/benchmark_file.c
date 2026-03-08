@@ -9,14 +9,22 @@ int main() {
     init();
 
     int num_components = 20000;
-    char* path = malloc(num_components * 10 + 100);
+    char* path = malloc(num_components * 6 + 100);
     path[0] = '\0';
 
-    strcat(path, "/root");
+    char* ptr = path;
+    int remaining = num_components * 6 + 100;
+
+    int written = snprintf(ptr, remaining, "/root");
+    ptr += written;
+    remaining -= written;
+
     for (int i = 0; i < num_components; i++) {
-        strcat(path, "/comp");
+        written = snprintf(ptr, remaining, "/comp");
+        ptr += written;
+        remaining -= written;
     }
-    strcat(path, "/file.txt");
+    snprintf(ptr, remaining, "/file.txt");
 
     printf("Benchmarking with %d components...\n", num_components);
 

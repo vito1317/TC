@@ -90,16 +90,17 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
     bool first = true;
     while (current != NULL) {
         if (!skip_last || current->next != NULL) {
+            size_t len = strlen(current->dir);
+
             if (!first && strcmp(current->dir, "/") != 0) {
                 // Add separator before non-root components
-                if (ptr > built_path && *(ptr - 1) != '/' && remaining > 1) {
+                if (ptr > built_path && *(ptr - 1) != '/' && remaining >= len + 2) {
                     *ptr++ = '/';
                     *ptr = '\0';
                     remaining--;
                 }
             }
 
-            size_t len = strlen(current->dir);
             if (len < remaining) {
                 memcpy(ptr, current->dir, len);
                 ptr += len;
