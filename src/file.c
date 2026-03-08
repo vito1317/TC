@@ -1,4 +1,5 @@
 #include "file.h"
+#include <stdbool.h>
 
 static void append_path_component(char* base, char** ptr, const char* component, bool is_first, size_t buffer_size) {
     bool has_content = (*ptr > base);
@@ -6,14 +7,14 @@ static void append_path_component(char* base, char** ptr, const char* component,
     if (!is_first && strcmp(component, "/") != 0) {
         // Add separator before non-root components
         if (has_content && *(*ptr - 1) != '/') {
-            if ((size_t)(*ptr - base) + 1 < buffer_size) {
+            if ((size_t)(*ptr - base) + 2 <= buffer_size) {
                 *(*ptr)++ = '/';
             }
         }
     }
 
     size_t len = strlen(component);
-    if ((size_t)(*ptr - base) + len < buffer_size) {
+    if ((size_t)(*ptr - base) + len + 1 <= buffer_size) {
         memcpy(*ptr, component, len);
         *ptr += len;
         **ptr = '\0';

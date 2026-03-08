@@ -10,6 +10,10 @@ int main() {
 
     int num_components = 20000;
     char* path = malloc(num_components * 10 + 100);
+    if (path == NULL) {
+        fprintf(stderr, "Failed to allocate memory for path\n");
+        return 1;
+    }
     path[0] = '\0';
 
     strcat(path, "/root");
@@ -26,6 +30,11 @@ int main() {
     // Benchmark normalize_path (called inside create_file)
     start = clock();
     File* file = create_file(path);
+    if (file == NULL) {
+        fprintf(stderr, "Failed to create file\n");
+        free(path);
+        return 1;
+    }
     end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("create_file (includes normalize_path) took %f seconds\n", cpu_time_used);
