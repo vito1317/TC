@@ -11,18 +11,24 @@
  *
  * NOTE: The caller MUST ensure the buffer has enough space for component + potential separator + null terminator.
  */
-static void append_path_component(char* base, char** ptr, const char* component, bool is_first) {
+static void append_path_component(char* base, char** ptr, const char* component, bool is_first, size_t max_len) {
     if (!is_first && strcmp(component, "/") != 0) {
         // Add separator before non-root components
         if (*ptr > base && *(*ptr - 1) != '/') {
-            *(*ptr)++ = '/';
+            if ((size_t)(*ptr - base) < max_len) {
+                *(*ptr)++ = '/';
+            }
         }
     }
 
     size_t len = strlen(component);
-    memcpy(*ptr, component, len);
-    *ptr += len;
-    **ptr = '\0';
+    if ((size_t)(*ptr - base) + len < max_len) {
+        memcpy(*ptr, component, len);
+        *ptr += len;
+        **ptr = '\0';
+    } else {
+        fprintf(stderr, "Error: Path component buffer overflow\n");
+    }
 }
 
 string get_cwd(void) {
@@ -67,11 +73,18 @@ string absolute_path(string path) {
     string cwd = get_cwd();
     if (cwd == NULL)
         return path;
-    size_t total_len = strlen(cwd) + 1 + path_len + 1;
+
+    size_t cwd_len = strlen(cwd);
+    size_t total_len = cwd_len + 1 + path_len + 1;
     string abs_path = create_string("", total_len);
-    sprintf(abs_path, "%s/%s", cwd, path);
+
+    int n = snprintf(abs_path, total_len, "%s/%s", cwd, path);
+    if (n >= (int)total_len) {
+        fprintf(stderr, "Error: Path buffer truncated in absolute_path\n");
+    }
+
     free(cwd);
-    return create_string(abs_path, total_len);
+    return create_string(abs_path, strlen(abs_path));
 }
 
 string get_file_dir(File* path) {
@@ -105,13 +118,17 @@ string get_file_dir(File* path) {
     bool first = true;
     while (current != NULL) {
         if (current->next != NULL) {  // Not the last element
-            append_path_component(dir_path, &ptr, current->dir, first);
+            append_path_component(dir_path, &ptr, current->dir, first, total_len + 1);
             first = false;
         }
         current = current->next;
     }
 
     return create_string(dir_path, strlen(dir_path));
+}
+
+string get_file_name(File* path) {
+    return path->name;
 }
 
 string get_full_path(File* path) {
@@ -281,7 +298,7 @@ void normalize_path(File* file) {
     current = dirs_head;
     bool is_first = true;
     while (current != NULL) {
-        append_path_component(full_path, &ptr, current->dir, is_first);
+        append_path_component(full_path, &ptr, current->dir, is_first, full_path_len + 1);
         is_first = false;
         current = current->next;
     }
