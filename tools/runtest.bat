@@ -8,9 +8,17 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM Gather all source files except main.c
+set "SRC_FILES="
+for /R "src" %%F in (*.c) do (
+    if /I not "%%~nxF"=="main.c" (
+        set "SRC_FILES=!SRC_FILES! %%F"
+    )
+)
+
 REM Build unit tests
 echo Building unit tests...
-gcc -I"include" src\compiler.c src\create.c src\file.c src\helper.c src\lexer.c src\lib.c src\output.c src\parser.c test\test_file.c -o build\test_file.exe
+gcc -I"include" %SRC_FILES% test\test_file.c -o build\test_file.exe
 if errorlevel 1 (
     echo Unit test build failed!
     exit /b 1
