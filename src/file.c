@@ -1,30 +1,5 @@
 #include "file.h"
 
-/**
- * Appends a path component to a buffer and updates the current pointer.
- * Handles adding directory separators ('/') before non-root components if necessary.
- *
- * @param base      The start of the destination buffer (for boundary checks).
- * @param ptr       Pointer to the current end of the string in the buffer. Updated after append.
- * @param component The directory component to append.
- * @param is_first  Boolean flag indicating if this is the first component being added.
- *
- * NOTE: The caller MUST ensure the buffer has enough space for component + potential separator + null terminator.
- */
-static void append_path_component(char* base, char** ptr, const char* component, bool is_first) {
-    if (!is_first && strcmp(component, "/") != 0) {
-        // Add separator before non-root components
-        if (*ptr > base && *(*ptr - 1) != '/') {
-            *(*ptr)++ = '/';
-        }
-    }
-
-    size_t len = strlen(component);
-    memcpy(*ptr, component, len);
-    *ptr += len;
-    **ptr = '\0';
-}
-
 string get_cwd(void) {
 #if PLATFORM == 1
     return _getcwd(NULL, 0);  // MSVC
@@ -74,17 +49,24 @@ string absolute_path(string path) {
     return create_string(abs_path, total_len);
 }
 
-string get_file_dir(File* path) {
-    if (path->dirs == NULL) return 0;
+string get_file_name(File* path) {
+    return path->name;
+}
+
+string get_file_extension(File* path) {
+    return path->extension;
+}
+
+static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
+    if (dirs_head == NULL) return 0;
+    if (skip_last && dirs_head->next == NULL) return create_string("", 0);
 
     // Calculate total length needed
     size_t total_len = 0;
     size_t node_count = 0;
-    StrNode* current = path->dirs;
+    StrNode* current = dirs_head;
     while (current != NULL) {
-        if (current->next != NULL) {  // Not the last element (which is the filename)
-            size_t dir_len = strlen(current->dir);
-            total_len += dir_len;
+        if (!skip_last || current->next != NULL) {
             node_count++;
         }
         current = current->next;
@@ -92,26 +74,62 @@ string get_file_dir(File* path) {
 
     if (node_count == 0) return 0;
 
-    // Add space for separators (but not after root '/' or drive letter)
+    size_t lengths[node_count];
+    current = dirs_head;
+    size_t i = 0;
+    while (current != NULL) {
+        if (!skip_last || current->next != NULL) {
+            size_t dir_len = strlen(current->dir);
+            lengths[i++] = dir_len;
+            total_len += dir_len;
+        }
+        current = current->next;
+    }
+
+    // Add space for separators
     if (node_count > 1)
         total_len += node_count - 1;
 
-    // Build the directory path
-    string dir_path = create_string("", total_len + 1);
-    char* ptr = dir_path;
+    // Allocate buffer with exact size + 1 for null terminator
+    size_t alloc_size = total_len + 1;
+    string built_path = create_string("", alloc_size);
+    char* ptr = built_path;
     *ptr = '\0';
+    size_t remaining = alloc_size;
 
-    current = path->dirs;
+    current = dirs_head;
     bool first = true;
+    i = 0;
     while (current != NULL) {
-        if (current->next != NULL) {  // Not the last element
-            append_path_component(dir_path, &ptr, current->dir, first);
+        if (!skip_last || current->next != NULL) {
+            size_t len = lengths[i++];
+
+            if (!first && strcmp(current->dir, "/") != 0) {
+                // Add separator before non-root components
+                if (ptr > built_path && *(ptr - 1) != '/' && remaining >= len + 2) {
+                    *ptr++ = '/';
+                    *ptr = '\0';
+                    remaining--;
+                }
+            }
+
+            if (len < remaining) {
+                memcpy(ptr, current->dir, len);
+                ptr += len;
+                *ptr = '\0';
+                remaining -= len;
+            }
             first = false;
         }
         current = current->next;
     }
 
-    return create_string(dir_path, strlen(dir_path));
+    return create_string(built_path, strlen(built_path));
+}
+
+string get_file_dir(File* path) {
+    if (path->dirs == NULL) return 0;
+    return build_path_from_dirs(path->dirs, true);
 }
 
 string get_full_path(File* path) {
@@ -137,6 +155,46 @@ void change_file_extension(File* file, const string new_extension) {
 
     if (new_extension != NULL)
         strcat(new_path, new_extension);
+
+    file->path = create_string(new_path, strlen(new_path));
+}
+
+void change_file_name(File* file, const string new_name) {
+    file->name = new_name;
+
+    // Update the last node in dirs list
+    if (file->dirs != NULL) {
+        StrNode* current = file->dirs;
+
+        while (current != NULL) {
+            if (current->next == NULL) {
+                // This is the last node - update it
+                string ext_cstr = file->extension != NULL ? file->extension : "";
+                size_t full_name_len = strlen(new_name);
+                if (file->extension != NULL) full_name_len += strlen(ext_cstr);
+
+                string full_name = create_string("", full_name_len + 1);
+                sprintf(full_name, "%s%s", new_name, ext_cstr);
+                current->dir = create_string(full_name, strlen(full_name));
+                break;
+            }
+            current = current->next;
+        }
+    }
+
+    // Rebuild the full path
+    string dir = get_file_dir(file);
+    string dir_cstr = dir != NULL ? dir : "";
+    string ext_cstr = file->extension != NULL ? (file->extension) : "";
+
+    size_t path_len = strlen(dir_cstr) + 1 + strlen(new_name);
+    if (file->extension != NULL) path_len += strlen(ext_cstr);
+
+    string new_path = create_string("", path_len + 1);
+    if (dir != NULL && strlen(dir_cstr) > 0)
+        sprintf(new_path, "%s/%s%s", dir_cstr, new_name, ext_cstr);
+    else
+        sprintf(new_path, "%s%s", new_name, ext_cstr);
 
     file->path = create_string(new_path, strlen(new_path));
 }
@@ -260,31 +318,11 @@ void normalize_path(File* file) {
     }
 
     // Rebuild the full path
-    size_t full_path_len = 0;
-    StrNode* current = dirs_head;
-    size_t node_count = 0;
-
-    while (current != NULL) {
-        full_path_len += strlen(current->dir);
-        node_count++;
-        current = current->next;
+    string full_path = build_path_from_dirs(dirs_head, false);
+    if (full_path != NULL) {
+        file->path = create_string(full_path, strlen(full_path));
+    } else {
+        fprintf(stderr, "Error: build_path_from_dirs failed to return valid path data in normalize_path\n");
+        file->path = create_string("", 0);
     }
-
-    // Add space for separators between components
-    if (node_count > 1)
-        full_path_len += (node_count - 1);
-
-    string full_path = create_string("", full_path_len + 1);
-    char* ptr = full_path;
-    *ptr = '\0';
-
-    current = dirs_head;
-    bool is_first = true;
-    while (current != NULL) {
-        append_path_component(full_path, &ptr, current->dir, is_first);
-        is_first = false;
-        current = current->next;
-    }
-
-    file->path = create_string(full_path, strlen(full_path));
 }
