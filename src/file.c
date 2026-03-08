@@ -114,6 +114,11 @@ string get_file_dir(File* path) {
     return create_string(dir_path, strlen(dir_path));
 }
 
+string get_file_name(File* path) {
+    if (path == NULL || path->name == NULL) return 0;
+    return path->name;
+}
+
 string get_full_path(File* path) {
     return path->path;
 }
