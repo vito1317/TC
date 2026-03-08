@@ -1,0 +1,73 @@
+TAC {
+    designs: [
+        Test1 {
+            int a0 0
+        }
+    ]
+    entry_point: main
+    subroutines: [
+        Test1.constructor {
+            parameters: [
+                int p0
+            ]
+            instructions: [
+                alloc t0 Test1 4
+                set_attr t0 a0 10
+                param 4 t0
+                param 4 p0
+                call  t1 Test1.init 2
+                ret   t1
+            ]
+        }
+        Test1.init {
+            parameters: [
+                Test1 p1
+                int   p2
+            ]
+            instructions: [
+                set_attr p1 a0 p2
+                ret      p1
+            ]
+        }
+        Test1.get_a {
+            parameters: [
+                Test1 p3
+            ]
+            instructions: [
+                get_attr t2 p3 a0
+                ret      t2
+            ]
+        }
+        Test1.set_a {
+            parameters: [
+                Test1 p4
+                int   p5
+            ]
+            instructions: [
+                set_attr p4 a0 p5
+                ret      void
+            ]
+        }
+        main {
+            parameters: []
+            instructions: [
+                param  4 5
+                call   v0 Test1.constructor 1
+                param  v0
+                call   t3 Test1.get_a 1
+                param  4 t3
+                call   void print 1
+                param  4 v0
+                param  4 20
+                call   void Test1.set_a 2
+                param  4 v0
+                call   t4 Test1.get_a 1
+                param  4 t4
+                call   void print 1
+                assign v1 30.5
+                assign v2 15
+                ret    0
+            ]
+        }
+    ]
+}
