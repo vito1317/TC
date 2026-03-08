@@ -1,30 +1,5 @@
 #include "file.h"
 
-/**
- * Appends a path component to a buffer and updates the current pointer.
- * Handles adding directory separators ('/') before non-root components if necessary.
- *
- * @param base      The start of the destination buffer (for boundary checks).
- * @param ptr       Pointer to the current end of the string in the buffer. Updated after append.
- * @param component The directory component to append.
- * @param is_first  Boolean flag indicating if this is the first component being added.
- *
- * NOTE: The caller MUST ensure the buffer has enough space for component + potential separator + null terminator.
- */
-static void append_path_component(char* base, char** ptr, const char* component, bool is_first) {
-    if (!is_first && strcmp(component, "/") != 0) {
-        // Add separator before non-root components
-        if (*ptr > base && *(*ptr - 1) != '/') {
-            *(*ptr)++ = '/';
-        }
-    }
-
-    size_t len = strlen(component);
-    memcpy(*ptr, component, len);
-    *ptr += len;
-    **ptr = '\0';
-}
-
 string get_cwd(void) {
 #if PLATFORM == 1
     return _getcwd(NULL, 0);  // MSVC
@@ -69,9 +44,17 @@ string absolute_path(string path) {
         return path;
     size_t total_len = strlen(cwd) + 1 + path_len + 1;
     string abs_path = create_string("", total_len);
-    sprintf(abs_path, "%s/%s", cwd, path);
+    snprintf(abs_path, total_len, "%s/%s", cwd, path);
     free(cwd);
     return create_string(abs_path, total_len);
+}
+
+string get_file_name(File* path) {
+    return path->name;
+}
+
+string get_file_extension(File* path) {
+    return path->extension;
 }
 
 string get_file_dir(File* path) {
@@ -98,14 +81,18 @@ string get_file_dir(File* path) {
 
     // Build the directory path
     string dir_path = create_string("", total_len + 1);
-    char* ptr = dir_path;
-    *ptr = '\0';
+    dir_path[0] = '\0';
 
     current = path->dirs;
     bool first = true;
     while (current != NULL) {
         if (current->next != NULL) {  // Not the last element
-            append_path_component(dir_path, &ptr, current->dir, first);
+            if (!first && strcmp(current->dir, "/") != 0)
+                // Add separator before non-root components
+                if (strlen(dir_path) > 0 && dir_path[strlen(dir_path) - 1] != '/')
+                    strcat(dir_path, "/");
+
+            strcat(dir_path, current->dir);
             first = false;
         }
         current = current->next;
@@ -119,6 +106,8 @@ string get_full_path(File* path) {
 }
 
 void change_file_extension(File* file, const string new_extension) {
+    if (file == NULL) return;
+
     file->extension = new_extension;
 
     // Rebuild the full path
@@ -126,17 +115,100 @@ void change_file_extension(File* file, const string new_extension) {
     string dir_cstr = dir != NULL ? dir : "";
     string ext_cstr = new_extension != NULL ? new_extension : "";
 
-    size_t path_len = strlen(dir_cstr) + 1 + strlen(file->name);
-    if (new_extension != NULL) path_len += strlen(ext_cstr);
+    size_t dir_len = strlen(dir_cstr);
+    size_t name_len = strlen(file->name);
+    size_t ext_len = strlen(ext_cstr);
 
-    string new_path = create_string("", path_len + 1);
-    if (dir != NULL && strlen(dir_cstr) > 0)
-        sprintf(new_path, "%s/%s", dir_cstr, file->name);
+    // Calculate length, plus 1 for '/' if directory exists
+    size_t path_len = dir_len + name_len + ext_len + (dir_len > 0 ? 1 : 0);
+    size_t buffer_size = path_len + 1;
+
+    string new_path = create_string("", buffer_size);
+    if (new_path == NULL) {
+        fprintf(stderr, "Fatal: Cannot allocate memory for new path\n");
+        return;
+    }
+
+    int written;
+    if (dir_len > 0)
+        written = snprintf(new_path, buffer_size, "%s/%s%s", dir_cstr, file->name, ext_cstr);
     else
-        sprintf(new_path, "%s", file->name);
+        written = snprintf(new_path, buffer_size, "%s%s", file->name, ext_cstr);
 
-    if (new_extension != NULL)
-        strcat(new_path, new_extension);
+    if (written < 0 || (size_t)written >= buffer_size) {
+        fprintf(stderr, "Error: Path string truncated during extension change\n");
+        return;
+    }
+
+    file->path = create_string(new_path, strlen(new_path));
+}
+
+void change_file_name(File* file, const string new_name) {
+    if (file == NULL || new_name == NULL) return;
+
+    file->name = new_name;
+
+    // Update the last node in dirs list
+    if (file->dirs != NULL) {
+        StrNode* current = file->dirs;
+
+        while (current != NULL) {
+            if (current->next == NULL) {
+                // This is the last node - update it
+                string ext_cstr = file->extension != NULL ? file->extension : "";
+                size_t new_name_len = strlen(new_name);
+                size_t ext_len = strlen(ext_cstr);
+                size_t full_name_len = new_name_len + ext_len;
+                size_t buffer_size = full_name_len + 1;
+
+                string full_name = create_string("", buffer_size);
+                if (full_name == NULL) {
+                    fprintf(stderr, "Fatal: Cannot allocate memory for full name\n");
+                    return;
+                }
+
+                int written = snprintf(full_name, buffer_size, "%s%s", new_name, ext_cstr);
+                if (written < 0 || (size_t)written >= buffer_size) {
+                    fprintf(stderr, "Error: File name string truncated during name change\n");
+                    return;
+                }
+
+                current->dir = create_string(full_name, strlen(full_name));
+                break;
+            }
+            current = current->next;
+        }
+    }
+
+    // Rebuild the full path
+    string dir = get_file_dir(file);
+    string dir_cstr = dir != NULL ? dir : "";
+    string ext_cstr = file->extension != NULL ? (file->extension) : "";
+
+    size_t dir_len = strlen(dir_cstr);
+    size_t new_name_len = strlen(new_name);
+    size_t ext_len = strlen(ext_cstr);
+
+    // Calculate length, plus 1 for '/' if directory exists
+    size_t path_len = dir_len + new_name_len + ext_len + (dir_len > 0 ? 1 : 0);
+    size_t buffer_size = path_len + 1;
+
+    string new_path = create_string("", buffer_size);
+    if (new_path == NULL) {
+        fprintf(stderr, "Fatal: Cannot allocate memory for new path\n");
+        return;
+    }
+
+    int written;
+    if (dir_len > 0)
+        written = snprintf(new_path, buffer_size, "%s/%s%s", dir_cstr, new_name, ext_cstr);
+    else
+        written = snprintf(new_path, buffer_size, "%s%s", new_name, ext_cstr);
+
+    if (written < 0 || (size_t)written >= buffer_size) {
+        fprintf(stderr, "Error: Path string truncated during name change\n");
+        return;
+    }
 
     file->path = create_string(new_path, strlen(new_path));
 }
@@ -275,13 +347,18 @@ void normalize_path(File* file) {
         full_path_len += (node_count - 1);
 
     string full_path = create_string("", full_path_len + 1);
-    char* ptr = full_path;
-    *ptr = '\0';
+    full_path[0] = '\0';
 
     current = dirs_head;
     bool is_first = true;
     while (current != NULL) {
-        append_path_component(full_path, &ptr, current->dir, is_first);
+        if (!is_first && strcmp(current->dir, "/") != 0) {
+            // Add separator before non-root components
+            if (strlen(full_path) > 0 && full_path[strlen(full_path) - 1] != '/') {
+                strcat(full_path, "/");
+            }
+        }
+        strcat(full_path, current->dir);
         is_first = false;
         current = current->next;
     }
