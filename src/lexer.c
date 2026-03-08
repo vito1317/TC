@@ -131,7 +131,7 @@ static Token* next_token(Lexer* lexer, bool skip_comment) {
                     return next_token(lexer, skip_comment);
                 return create_token(COMMENT, create_string(&lexer->source[start], lexer->position - start), lexer->line, column_start);
             }
-            c = get_current_char(lexer);
+            get_current_char(lexer);
             if (skip_comment)
                 return next_token(lexer, skip_comment);
             return create_token(COMMENT, create_string(&lexer->source[start], lexer->position - start - 2), lexer->line, column_start);
