@@ -89,11 +89,14 @@ void parse_file(const string source_name, const string output_path, bool o_token
     if (o_token) {
         File* token_file = create_file(source_name);
         if (output_path != NULL) {
-            string file_name_only = get_file_name(token_file);
-            char buffer[1024];
-            int n = snprintf(buffer, sizeof(buffer), "%s%s%s.lex", output_path, output_path[strlen(output_path) - 1] == '/' ? "" : "/", file_name_only);
-            if (n >= (int)sizeof(buffer)) { fprintf(stderr, "Error: Path too long\n"); exit(1); }
+            string file_name_only = token_file->name;
+            size_t req_len = strlen(output_path) + 1 + strlen(file_name_only) + 5;
+            char* buffer = malloc(req_len);
+            if (!buffer) { fprintf(stderr, "Fatal: Cannot allocate memory\n"); exit(1); }
+            int n = snprintf(buffer, req_len, "%s%s%s.lex", output_path, output_path[strlen(output_path) - 1] == '/' ? "" : "/", file_name_only);
+            if (n < 0 || (size_t)n >= req_len) { fprintf(stderr, "Error: Path too long\n"); exit(1); }
             token_file = create_file(buffer);
+            free(buffer);
         } else {
             change_file_extension(token_file, create_string(".lex", 4));
         }
@@ -111,11 +114,14 @@ void parse_file(const string source_name, const string output_path, bool o_token
     if (o_ast) {
         File* ast_file = create_file(source_name);
         if (output_path != NULL) {
-            string file_name_only = get_file_name(ast_file);
-            char buffer[1024];
-            int n = snprintf(buffer, sizeof(buffer), "%s%s%s.ast", output_path, output_path[strlen(output_path) - 1] == '/' ? "" : "/", file_name_only);
-            if (n >= (int)sizeof(buffer)) { fprintf(stderr, "Error: Path too long\n"); exit(1); }
+            string file_name_only = ast_file->name;
+            size_t req_len = strlen(output_path) + 1 + strlen(file_name_only) + 5;
+            char* buffer = malloc(req_len);
+            if (!buffer) { fprintf(stderr, "Fatal: Cannot allocate memory\n"); exit(1); }
+            int n = snprintf(buffer, req_len, "%s%s%s.ast", output_path, output_path[strlen(output_path) - 1] == '/' ? "" : "/", file_name_only);
+            if (n < 0 || (size_t)n >= req_len) { fprintf(stderr, "Error: Path too long\n"); exit(1); }
             ast_file = create_file(buffer);
+            free(buffer);
         } else {
             change_file_extension(ast_file, create_string(".ast", 4));
         }

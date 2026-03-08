@@ -69,9 +69,13 @@ string absolute_path(string path) {
         return path;
     size_t total_len = strlen(cwd) + 1 + path_len + 1;
     string abs_path = create_string("", total_len);
-    snprintf(abs_path, total_len, "%s/%s", cwd, path);
+    int written = snprintf(abs_path, total_len, "%s/%s", cwd, path);
+    if (written < 0 || (size_t)written >= total_len) {
+        fprintf(stderr, "Fatal: Path construction truncated or failed\n");
+        exit(1);
+    }
     free(cwd);
-    return create_string(abs_path, total_len);
+    return create_string(abs_path, (size_t)written);
 }
 
 string get_file_dir(File* path) {
@@ -103,7 +107,6 @@ string get_file_dir(File* path) {
 
     current = path->dirs;
     bool first = true;
-    size_t current_len = 0;
     while (current != NULL) {
         if (current->next != NULL) {  // Not the last element
             append_path_component(dir_path, &ptr, current->dir, first);
@@ -131,10 +134,16 @@ void change_file_extension(File* file, const string new_extension) {
     if (new_extension != NULL) path_len += strlen(ext_cstr);
 
     string new_path = create_string("", path_len + 1);
+    int written = 0;
     if (dir != NULL && strlen(dir_cstr) > 0)
-        snprintf(new_path, path_len + 1, "%s/%s", dir_cstr, file->name);
+        written = snprintf(new_path, path_len + 1, "%s/%s", dir_cstr, file->name);
     else
-        snprintf(new_path, path_len + 1, "%s", file->name);
+        written = snprintf(new_path, path_len + 1, "%s", file->name);
+
+    if (written < 0 || (size_t)written >= path_len + 1) {
+        fprintf(stderr, "Fatal: Path construction truncated or failed\n");
+        exit(1);
+    }
 
     if (new_extension != NULL)
         strcat(new_path, new_extension);
@@ -281,7 +290,6 @@ void normalize_path(File* file) {
 
     current = dirs_head;
     bool is_first = true;
-    size_t current_len = 0;
     while (current != NULL) {
         append_path_component(full_path, &ptr, current->dir, is_first);
         is_first = false;

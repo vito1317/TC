@@ -21,6 +21,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // These point to argv values which are managed by the OS and should not be freed
     string source_file = NULL;
     string output_path = NULL;
     bool o_ast = false;
