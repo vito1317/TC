@@ -57,15 +57,15 @@ string get_file_extension(File* path) {
     return path->extension;
 }
 
-string get_file_dir(File* path) {
-    if (path->dirs == NULL) return 0;
+static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
+    if (dirs_head == NULL || (skip_last && dirs_head->next == NULL)) return 0;
 
     // Calculate total length needed
     size_t total_len = 0;
     size_t node_count = 0;
-    StrNode* current = path->dirs;
+    StrNode* current = dirs_head;
     while (current != NULL) {
-        if (current->next != NULL) {  // Not the last element (which is the filename)
+        if (!skip_last || current->next != NULL) {
             size_t dir_len = strlen(current->dir);
             total_len += dir_len;
             node_count++;
@@ -75,30 +75,48 @@ string get_file_dir(File* path) {
 
     if (node_count == 0) return 0;
 
-    // Add space for separators (but not after root '/' or drive letter)
+    // Add space for separators
     if (node_count > 1)
         total_len += node_count - 1;
 
-    // Build the directory path
-    string dir_path = create_string("", total_len + 1);
-    dir_path[0] = '\0';
+    // Allocate buffer with exact size + 1 for null terminator
+    size_t alloc_size = total_len + 1;
+    string built_path = create_string("", alloc_size);
+    char* ptr = built_path;
+    *ptr = '\0';
+    size_t remaining = alloc_size;
 
-    current = path->dirs;
+    current = dirs_head;
     bool first = true;
     while (current != NULL) {
-        if (current->next != NULL) {  // Not the last element
-            if (!first && strcmp(current->dir, "/") != 0)
+        if (!skip_last || current->next != NULL) {
+            if (!first && strcmp(current->dir, "/") != 0) {
                 // Add separator before non-root components
-                if (strlen(dir_path) > 0 && dir_path[strlen(dir_path) - 1] != '/')
-                    strcat(dir_path, "/");
+                if (ptr > built_path && *(ptr - 1) != '/' && remaining > 1) {
+                    *ptr++ = '/';
+                    *ptr = '\0';
+                    remaining--;
+                }
+            }
 
-            strcat(dir_path, current->dir);
+            size_t len = strlen(current->dir);
+            if (len < remaining) {
+                memcpy(ptr, current->dir, len);
+                ptr += len;
+                *ptr = '\0';
+                remaining -= len;
+            }
             first = false;
         }
         current = current->next;
     }
 
-    return create_string(dir_path, strlen(dir_path));
+    return create_string(built_path, strlen(built_path));
+}
+
+string get_file_dir(File* path) {
+    if (path->dirs == NULL) return 0;
+    return build_path_from_dirs(path->dirs, true);
 }
 
 string get_full_path(File* path) {
@@ -287,36 +305,10 @@ void normalize_path(File* file) {
     }
 
     // Rebuild the full path
-    size_t full_path_len = 0;
-    StrNode* current = dirs_head;
-    size_t node_count = 0;
-
-    while (current != NULL) {
-        full_path_len += strlen(current->dir);
-        node_count++;
-        current = current->next;
+    string full_path = build_path_from_dirs(dirs_head, false);
+    if (full_path != NULL) {
+        file->path = create_string(full_path, strlen(full_path));
+    } else {
+        file->path = create_string("", 0);
     }
-
-    // Add space for separators between components
-    if (node_count > 1)
-        full_path_len += (node_count - 1);
-
-    string full_path = create_string("", full_path_len + 1);
-    full_path[0] = '\0';
-
-    current = dirs_head;
-    bool is_first = true;
-    while (current != NULL) {
-        if (!is_first && strcmp(current->dir, "/") != 0) {
-            // Add separator before non-root components
-            if (strlen(full_path) > 0 && full_path[strlen(full_path) - 1] != '/') {
-                strcat(full_path, "/");
-            }
-        }
-        strcat(full_path, current->dir);
-        is_first = false;
-        current = current->next;
-    }
-
-    file->path = create_string(full_path, strlen(full_path));
 }
