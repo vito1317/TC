@@ -9,7 +9,8 @@ int main() {
     init();
 
     int num_components = 20000;
-    char* path = malloc(num_components * 10 + 100);
+    size_t path_max_len = num_components * 10 + 100;
+    string path = create_string("", path_max_len);
     path[0] = '\0';
 
     strcat(path, "/root");
@@ -40,6 +41,5 @@ int main() {
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("get_file_dir (100 iterations) took %f seconds\n", cpu_time_used);
 
-    free(path);
     return 0;
 }

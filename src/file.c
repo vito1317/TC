@@ -1,11 +1,21 @@
 #include "file.h"
 
+/**
+ * Appends a path component to a buffer and updates the current pointer.
+ * Handles adding directory separators ('/') before non-root components if necessary.
+ *
+ * @param base      The start of the destination buffer (for boundary checks).
+ * @param ptr       Pointer to the current end of the string in the buffer. Updated after append.
+ * @param component The directory component to append.
+ * @param is_first  Boolean flag indicating if this is the first component being added.
+ *
+ * NOTE: The caller MUST ensure the buffer has enough space for component + potential separator + null terminator.
+ */
 static void append_path_component(char* base, char** ptr, const char* component, bool is_first) {
     if (!is_first && strcmp(component, "/") != 0) {
         // Add separator before non-root components
         if (*ptr > base && *(*ptr - 1) != '/') {
             *(*ptr)++ = '/';
-            **ptr = '\0';
         }
     }
 
