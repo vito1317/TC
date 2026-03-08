@@ -9,15 +9,33 @@ int main() {
     init();
 
     int num_components = 20000;
-    size_t path_max_len = num_components * 10 + 100;
-    string path = create_string("", path_max_len);
+    // Exactly calculate buffer size for:
+    // "/root" (5) + num_components * "/comp" (5) + "/file.txt" (9) + null terminator (1)
+    size_t required_size = 5 + (num_components * 5) + 9 + 1;
+    char* path = malloc(required_size);
+    if (!path) {
+        fprintf(stderr, "Failed to allocate memory\n");
+        return 1;
+    }
     path[0] = '\0';
 
-    strcat(path, "/root");
-    for (int i = 0; i < num_components; i++) {
-        strcat(path, "/comp");
+    char* ptr = path;
+    int remaining = required_size;
+
+    int written = snprintf(ptr, remaining, "/root");
+    if (written > 0 && written < remaining) {
+        ptr += written;
+        remaining -= written;
     }
-    strcat(path, "/file.txt");
+
+    for (int i = 0; i < num_components; i++) {
+        written = snprintf(ptr, remaining, "/comp");
+        if (written > 0 && written < remaining) {
+            ptr += written;
+            remaining -= written;
+        }
+    }
+    snprintf(ptr, remaining, "/file.txt");
 
     printf("Benchmarking with %d components...\n", num_components);
 
@@ -34,12 +52,12 @@ int main() {
     // Benchmark get_file_dir
     start = clock();
     for (int i = 0; i < 100; i++) {
-        volatile string dir = get_file_dir(file);
-        (void)dir;
+        string dir = get_file_dir(file);
     }
     end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("get_file_dir (100 iterations) took %f seconds\n", cpu_time_used);
 
+    free(path);
     return 0;
 }
