@@ -89,7 +89,7 @@ void parse_file(const string source_name, const string output_path, bool o_token
     if (o_token) {
         File* token_file = create_file(source_name);
         if (output_path != NULL) {
-            string file_name_only = get_file_name(token_file);
+            string file_name_only = token_file->name;
             char buffer[1024];
             int n = snprintf(buffer, sizeof(buffer), "%s%s%s.lex", output_path, output_path[strlen(output_path) - 1] == '/' ? "" : "/", file_name_only);
             if (n >= (int)sizeof(buffer)) { fprintf(stderr, "Error: Path too long\n"); exit(1); }
@@ -111,7 +111,7 @@ void parse_file(const string source_name, const string output_path, bool o_token
     if (o_ast) {
         File* ast_file = create_file(source_name);
         if (output_path != NULL) {
-            string file_name_only = get_file_name(ast_file);
+            string file_name_only = ast_file->name;
             char buffer[1024];
             int n = snprintf(buffer, sizeof(buffer), "%s%s%s.ast", output_path, output_path[strlen(output_path) - 1] == '/' ? "" : "/", file_name_only);
             if (n >= (int)sizeof(buffer)) { fprintf(stderr, "Error: Path too long\n"); exit(1); }
