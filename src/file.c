@@ -115,7 +115,7 @@ string get_file_dir(File* path) {
 }
 
 string get_file_name(File* path) {
-    if (path == NULL || path->name == NULL) return create_string("", 0);
+    if (path == NULL || path->name == NULL) return NULL;
     return create_string(path->name, strlen(path->name));
 }
 
