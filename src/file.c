@@ -1,5 +1,25 @@
 #include "file.h"
 
+static void append_path_component(char* base, char** ptr, const char* component, bool is_first, size_t buffer_size) {
+    bool has_content = (*ptr > base);
+
+    if (!is_first && strcmp(component, "/") != 0) {
+        // Add separator before non-root components
+        if (has_content && *(*ptr - 1) != '/') {
+            if ((size_t)(*ptr - base) + 1 < buffer_size) {
+                *(*ptr)++ = '/';
+            }
+        }
+    }
+
+    size_t len = strlen(component);
+    if ((size_t)(*ptr - base) + len < buffer_size) {
+        memcpy(*ptr, component, len);
+        *ptr += len;
+        **ptr = '\0';
+    }
+}
+
 string get_cwd(void) {
 #if PLATFORM == 1
     return _getcwd(NULL, 0);  // MSVC
@@ -81,18 +101,14 @@ string get_file_dir(File* path) {
 
     // Build the directory path
     string dir_path = create_string("", total_len + 1);
-    dir_path[0] = '\0';
+    char* ptr = dir_path;
+    *ptr = '\0';
 
     current = path->dirs;
     bool first = true;
     while (current != NULL) {
         if (current->next != NULL) {  // Not the last element
-            if (!first && strcmp(current->dir, "/") != 0)
-                // Add separator before non-root components
-                if (strlen(dir_path) > 0 && dir_path[strlen(dir_path) - 1] != '/')
-                    strcat(dir_path, "/");
-
-            strcat(dir_path, current->dir);
+            append_path_component(dir_path, &ptr, current->dir, first, total_len + 1);
             first = false;
         }
         current = current->next;
@@ -302,18 +318,13 @@ void normalize_path(File* file) {
         full_path_len += (node_count - 1);
 
     string full_path = create_string("", full_path_len + 1);
-    full_path[0] = '\0';
+    char* ptr = full_path;
+    *ptr = '\0';
 
     current = dirs_head;
     bool is_first = true;
     while (current != NULL) {
-        if (!is_first && strcmp(current->dir, "/") != 0) {
-            // Add separator before non-root components
-            if (strlen(full_path) > 0 && full_path[strlen(full_path) - 1] != '/') {
-                strcat(full_path, "/");
-            }
-        }
-        strcat(full_path, current->dir);
+        append_path_component(full_path, &ptr, current->dir, is_first, full_path_len + 1);
         is_first = false;
         current = current->next;
     }
