@@ -1,4 +1,5 @@
 #include "file.h"
+#include <stdint.h>
 
 string get_cwd(void) {
 #if PLATFORM == 1
@@ -67,6 +68,8 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
     while (current != NULL) {
         if (!skip_last || current->next != NULL) {
             size_t dir_len = strlen(current->dir);
+            // Protect against extremely long path overflow
+            if (SIZE_MAX - total_len < dir_len) return 0;
             total_len += dir_len;
             node_count++;
         }
@@ -76,15 +79,17 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
     if (node_count == 0) return 0;
 
     // Add space for separators
-    if (node_count > 1)
+    if (node_count > 1) {
+        if (SIZE_MAX - total_len < node_count - 1) return 0;
         total_len += node_count - 1;
+    }
 
     // Allocate buffer with exact size + 1 for null terminator
     size_t alloc_size = total_len + 1;
     string built_path = create_string("", alloc_size);
     char* ptr = built_path;
     *ptr = '\0';
-    size_t remaining = alloc_size;
+    size_t remaining = alloc_size - 1; // reserve 1 byte for null terminator
 
     current = dirs_head;
     bool first = true;
@@ -94,14 +99,14 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
 
             if (!first && strcmp(current->dir, "/") != 0) {
                 // Add separator before non-root components
-                if (ptr > built_path && *(ptr - 1) != '/' && remaining >= len + 2) {
+                if (ptr > built_path && *(ptr - 1) != '/' && remaining >= 1) {
                     *ptr++ = '/';
                     *ptr = '\0';
                     remaining--;
                 }
             }
 
-            if (len < remaining) {
+            if (remaining >= len) {
                 memcpy(ptr, current->dir, len);
                 ptr += len;
                 *ptr = '\0';

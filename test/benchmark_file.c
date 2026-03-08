@@ -9,20 +9,30 @@ int main() {
     init();
 
     int num_components = 20000;
-    char* path = malloc(num_components * 6 + 100);
+    size_t alloc_size = num_components * 6 + 100;
+    char* path = malloc(alloc_size);
+    if (!path) {
+        return 1;
+    }
     path[0] = '\0';
 
     char* ptr = path;
-    int remaining = num_components * 6 + 100;
+    int remaining = alloc_size;
 
     int written = snprintf(ptr, remaining, "/root");
-    ptr += written;
-    remaining -= written;
+    if (written > 0 && written < remaining) {
+        ptr += written;
+        remaining -= written;
+    }
 
     for (int i = 0; i < num_components; i++) {
         written = snprintf(ptr, remaining, "/comp");
-        ptr += written;
-        remaining -= written;
+        if (written > 0 && written < remaining) {
+            ptr += written;
+            remaining -= written;
+        } else {
+            break;
+        }
     }
     snprintf(ptr, remaining, "/file.txt");
 
