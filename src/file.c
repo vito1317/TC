@@ -78,10 +78,6 @@ string get_file_name(File* path) {
     return path->name;
 }
 
-string get_file_extension(File* path) {
-    return path->extension;
-}
-
 string get_file_dir(File* path) {
     if (path->dirs == NULL) return 0;
 
