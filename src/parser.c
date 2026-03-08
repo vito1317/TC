@@ -589,7 +589,6 @@ static Expression* parse_expr_prec(Lexer* lexer, Expression* expr_left, int min_
         expr_left = create_expression(op, expr_left, NULL, right);
         token = peek_next_token(lexer, true);
     }
-    token = peek_current_token(lexer);
     return expr_left;
 }
 Expression* parse_expression(Lexer* lexer, Scope* now_scope, Parser* parser) {
