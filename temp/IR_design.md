@@ -2,13 +2,15 @@
 TAC ::= { design } entry_point { subroutine }
 design ::= identifier(class_name) { attribute }
 entry_point ::= identifier(subroutine_name)
-subroutine ::= identifier(subroutine_name) { parameter } { instruction }
+subroutine ::= identifier(subroutine_name) { parameter } { block }
+block ::= label_name { instruction }
 attribute ::= identifier(type) attribute_name offset
 parameter ::= identifier(type) parameter_name
 attribute_name ::= "a" integer
 parameter_name ::= "p" integer
 var_name ::= "v" integer
 temp_var_name ::= "t" integer
+block_name ::= "b" integer
 instruction ::= add arg(result) arg(var_a) arg(var_b)
               | sub arg(result) arg(var_a) arg(var_b)
               | mul arg(result) arg(var_a) arg(var_b)
@@ -33,7 +35,6 @@ instruction ::= add arg(result) arg(var_a) arg(var_b)
               | jmp identifier(label)
               | ret arg(value)
               | call arg(var) identifier(subroutine_name) argument_count
-              | label identifier(label)
 arg ::= var_name | temp_var_name | parameter_name | literal
 literal ::= integer | float | string | boolean | void
 ```
