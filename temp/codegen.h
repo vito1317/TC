@@ -63,6 +63,8 @@ typedef enum InstructionType {
     INST_ASSIGN,    // =
     INST_SET_ATTR,  // set object attribute
     INST_GET_ATTR,  // get object attribute
+    INST_SET_ELEM,  // set array element
+    INST_GET_ELEM,  // get array element
     INST_PARAM,     // set parameter for function/method call
     INST_ALLOC,     // allocate size memory for variable
     INST_JMP_T,     // jump to label if condition is true

@@ -11,7 +11,7 @@ TAC {
                 int p0
             ]
             instructions: [
-                b0: {
+                b0 {
                     alloc t0 Test1 4
                     set_attr t0 a0 10
                     param 4 t0
@@ -27,7 +27,7 @@ TAC {
                 int   p2
             ]
             instructions: [
-                b1: {
+                b1 {
                     set_attr p1 a0 p2
                     ret      p1
                 }
@@ -38,7 +38,7 @@ TAC {
                 Test1 p3
             ]
             instructions: [
-                b2: {
+                b2 {
                     get_attr t2 p3 a0
                     ret      t2
                 }
@@ -50,7 +50,7 @@ TAC {
                 int   p5
             ]
             instructions: [
-                b3: {
+                b3 {
                     set_attr p4 a0 p5
                     ret      void
                 }
@@ -59,7 +59,7 @@ TAC {
         main {
             parameters: []
             instructions: [
-                b4: {
+                b4 {
                     param  4 5
                     call   v0 Test1.constructor 1
                     param  v0
