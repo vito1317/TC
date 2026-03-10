@@ -1,6 +1,6 @@
 ```ebnf
 TAC ::= { design } entry_point { subroutine }
-design ::= identifier(class_name) { attribute }
+design ::= identifier(class_name) integer(size) { attribute }
 entry_point ::= identifier(subroutine_name)
 subroutine ::= identifier(subroutine_name) { parameter } { local } { block }
 block ::= label_name { instruction }

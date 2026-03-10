@@ -1,6 +1,6 @@
 TAC {
     designs: [
-        Test2 {
+        Test2 4 {
             int a0 0
         }
     ]
