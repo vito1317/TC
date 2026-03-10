@@ -8,7 +8,11 @@ TAC {
     subroutines: [
         Test2.constructor {
             parameters: []
-            instructors: [
+            local: [
+                Test2 t0
+                Test2 t1
+            ]
+            instructions: [
                 b0 {
                     alloc t0 Test2 4
                     set_attr t0 a0 5
@@ -22,7 +26,10 @@ TAC {
             parameters: [
                 Test2 p0
             ]
-            instructors: [
+            local: [
+                int t2
+            ]
+            instructions: [
                 b1 {
                     get_attr t2 p0 a0
                     param 4 t2
@@ -36,7 +43,8 @@ TAC {
                 Test2 p1
                 int   p2
             ]
-            instructors: [
+            local: []
+            instructions: [
                 b2 {
                     set_attr p1 a0 p2
                     ret      void
@@ -47,7 +55,10 @@ TAC {
             parameters: [
                 Test2 p3
             ]
-            instructors: [
+            local: [
+                int t3
+            ]
+            instructions: [
                 b3 {
                     get_attr t3 p3 a0
                     ret      t3
@@ -56,7 +67,20 @@ TAC {
         }
         main {
             parameters: []
-            instructors: [
+            local: [
+                Test2 v0
+                arr   v1
+                int   t4
+                int   t5
+                int   t6
+                int   t7
+                int   t8
+                int   t9
+                int   t10
+                int   t11
+                int   t12
+            ]
+            instructions: [
                 b4 {
                     // var Test2 t = Test2();
                     call  v0 Test2.constructor 0

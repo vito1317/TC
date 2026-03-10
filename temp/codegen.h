@@ -9,26 +9,33 @@ typedef struct Id {
 } Id;
 typedef struct TAC {
     list(Design*) designs;
+    Id* entry_point;
     list(Subroutine*) subroutines;
 } TAC;
 typedef struct Design {
     Id* name;
     size_t size;
-    list(Id*) attributes;
+    list(Attribute*) attributes;
 } Design;
+typedef struct Attribute {
+    Id* type;
+    Id* name;
+    size_t offset;
+} Attribute;
 typedef struct Subroutine {
     Id* name;
-    list(Parameter*) parameters;
+    list(Var*) parameters;
+    list(Var*) local_vars;
     list(Block*) blocks;
 } Subroutine;
 typedef struct Block {
     Id* label;
     list(Instruction*) instructions;
 } Block;
-typedef struct Parameter {
+typedef struct Var {
     Id* name;
     Id* type;
-} Parameter;
+} Var;
 typedef enum ArgType {
     ARG_VARIABLE,
     ARG_CONSTANT,
