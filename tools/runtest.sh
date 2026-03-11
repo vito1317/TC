@@ -7,11 +7,20 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Build unit tests
+echo "Building unit tests..."
+gcc -I"include" $(find src -name "*.c" | grep -v main.c) test/test_file.c -o build/test_file
+if [ $? -ne 0 ]; then
+    echo "Unit test build failed!"
+    exit 1
+fi
+
 # Parse command line arguments
 RUN_ALL=1
 RUN_TEST1=0
 RUN_TEST2=0
 RUN_TEST3=0
+RUN_UNIT=0
 CLEAR_SCREEN=0
 
 if [ $# -eq 0 ]; then
@@ -32,13 +41,17 @@ else
             -3)
                 RUN_TEST3=1
                 ;;
+            -u)
+                RUN_UNIT=1
+                ;;
             *)
                 echo "Unknown option: $arg"
-                echo "Usage: $0 [-c] [-1] [-2] [-3]"
+                echo "Usage: $0 [-c] [-1] [-2] [-3] [-u]"
                 echo "  -c    Clear screen before running tests"
                 echo "  -1    Run test1"
                 echo "  -2    Run test2"
                 echo "  -3    Run test3"
+                echo "  -u    Run unit tests"
                 echo "  (no options: run all tests)"
                 exit 1
                 ;;
@@ -58,8 +71,19 @@ if [ $RUN_ALL -eq 1 ]; then
     RUN_TEST1=1
     RUN_TEST2=1
     RUN_TEST3=1
+    RUN_UNIT=1
     echo "Running all tests..."
     echo "========================================"
+fi
+
+if [ $RUN_UNIT -eq 1 ]; then
+    echo ""
+    echo "[Unit Tests]"
+    ./build/test_file
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Unit tests failed!"
+        HAS_ERROR=1
+    fi
 fi
 
 if [ $RUN_TEST1 -eq 1 ]; then
