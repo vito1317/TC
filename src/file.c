@@ -127,11 +127,6 @@ string get_file_name(File* path) {
     return create_string(path->name, strlen(path->name));
 }
 
-string get_file_name(File* path) {
-    if (path == NULL || path->name == NULL) return NULL;
-    return create_string(path->name, strlen(path->name));
-}
-
 string get_full_path(File* path) {
     return path->path;
 }
