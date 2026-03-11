@@ -1,0 +1,106 @@
+TAC {
+    designs: [
+        Test1 4 {
+            int a0 0
+        }
+    ]
+    entry_point: main
+    subroutines: [
+        Test1.constructor {
+            parameters: [
+                int p0
+            ]
+            local: [
+                Test1 t0
+                Test1 t1
+            ]
+            instructions: [
+                b0 {
+                    alloc t0 Test1 4
+                    set_attr t0 a0 10
+                    param 4 t0
+                    param 4 p0
+                    call  t1 Test1.init 2
+                    ret   t1
+                }
+            ]
+        }
+        Test1.init {
+            parameters: [
+                Test1 p1
+                int   p2
+            ]
+            local: []
+            instructions: [
+                b1 {
+                    set_attr p1 a0 p2
+                    ret      p1
+                }
+            ]
+        }
+        Test1.get_a {
+            parameters: [
+                Test1 p3
+            ]
+            local: [
+                int t2
+            ]
+            instructions: [
+                b2 {
+                    get_attr t2 p3 a0
+                    ret      t2
+                }
+            ]
+        }
+        Test1.set_a {
+            parameters: [
+                Test1 p4
+                int   p5
+            ]
+            local: []
+            instructions: [
+                b3 {
+                    set_attr p4 a0 p5
+                    ret      void
+                }
+            ]
+        }
+        main {
+            parameters: []
+            local: [
+                Test1 v0
+                int   t3
+                int   t4
+                float v1
+                int   v2
+            ]
+            instructions: [
+                b4 {
+                    // var Test1 t = Test1(5);
+                    param  4 5
+                    call   v0 Test1.constructor 1
+                    // print(t.get_a());
+                    param  4 v0
+                    call   t3 Test1.get_a 1
+                    param  4 t3
+                    call   void print 1
+                    // t.set_a(20);
+                    param  4 v0
+                    param  4 20
+                    call   void Test1.set_a 2
+                    // print(t.get_a());
+                    param  4 v0
+                    call   t4 Test1.get_a 1
+                    param  4 t4
+                    call   void print 1
+                    // var float _abc123 = 30.5;
+                    assign v1 30.5
+                    // var int _def456 = 15;
+                    assign v2 15
+                    // return 0;
+                    ret    0
+                }
+            ]
+        }
+    ]
+}

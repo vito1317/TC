@@ -1,4 +1,5 @@
 #include "file.h"
+#include <stdint.h>
 
 string get_cwd(void) {
 #if PLATFORM == 1
@@ -44,17 +45,14 @@ string absolute_path(string path) {
         return path;
     size_t total_len = strlen(cwd) + 1 + path_len + 1;
     string abs_path = create_string("", total_len);
-    snprintf(abs_path, total_len + 1, "%s/%s", cwd, path);
+    snprintf(abs_path, total_len, "%s/%s", cwd, path);
     free(cwd);
     return create_string(abs_path, total_len);
 }
 
-string get_file_name(File* path) {
-    return path->name;
-}
-
-string get_file_extension(File* path) {
-    return path->extension;
+string get_file_extension(File* file) {
+    if (file == NULL) return 0;
+    return file->extension;
 }
 
 static string construct_path_string(StrNode* dirs_head, bool skip_last) {
@@ -80,6 +78,8 @@ static string construct_path_string(StrNode* dirs_head, bool skip_last) {
     while (current != NULL) {
         if (!skip_last || current->next != NULL) {
             size_t dir_len = strlen(current->dir);
+            // Protect against extremely long path overflow
+            if (SIZE_MAX - total_len < dir_len) return 0;
             lengths[i++] = dir_len;
             total_len += dir_len;
         }
@@ -87,15 +87,17 @@ static string construct_path_string(StrNode* dirs_head, bool skip_last) {
     }
 
     // Add space for separators
-    if (node_count > 1)
+    if (node_count > 1) {
+        if (SIZE_MAX - total_len < node_count - 1) return 0;
         total_len += node_count - 1;
+    }
 
     // Allocate buffer with exact size + 1 for null terminator
     size_t alloc_size = total_len + 1;
     string built_path = create_string("", alloc_size);
     char* ptr = built_path;
     *ptr = '\0';
-    size_t remaining = alloc_size;
+    size_t remaining = alloc_size - 1; // reserve 1 byte for null terminator
 
     current = dirs_head;
     bool first = true;
@@ -106,13 +108,13 @@ static string construct_path_string(StrNode* dirs_head, bool skip_last) {
 
             if (!first && strcmp(current->dir, "/") != 0) {
                 // Add separator before non-root components
-                if (ptr > built_path && *(ptr - 1) != '/' && remaining > 1) {
+                if (ptr > built_path && *(ptr - 1) != '/' && remaining >= 1) {
                     *ptr++ = '/';
                     remaining--;
                 }
             }
 
-            if (len < remaining) {
+            if (remaining >= len) {
                 memcpy(ptr, current->dir, len);
                 ptr += len;
                 remaining -= len;
@@ -131,8 +133,22 @@ string get_file_dir(File* path) {
     return construct_path_string(path->dirs, true);
 }
 
+
+string get_file_name(File* path) {
+    if (path == NULL || path->name == NULL) return create_string("", 0);
+    return create_string(path->name, strlen(path->name));
+}
+
+string get_file_name(File* path) {
+    if (path == NULL || path->name == NULL) return create_string("", 0);
+    return create_string(path->name, strlen(path->name));
+}
+
 string get_full_path(File* path) {
-    return path->path;
+    if (path == NULL || path->path == NULL) {
+        return create_string("", 0);
+    }
+    return create_string(path->path, strlen(path->path));
 }
 
 void change_file_extension(File* file, const string new_extension) {
@@ -168,9 +184,12 @@ void change_file_name(File* file, const string new_name) {
         while (current != NULL) {
             if (current->next == NULL) {
                 // This is the last node - update it
+                string ext_cstr = file->extension != NULL ? file->extension : "";
                 size_t full_name_len = strlen(new_name);
+                if (file->extension != NULL) full_name_len += strlen(ext_cstr);
+
                 string full_name = create_string("", full_name_len + 1);
-                snprintf(full_name, full_name_len + 1, "%s", new_name);
+                snprintf(full_name, full_name_len + 1, "%s%s", new_name, ext_cstr);
                 current->dir = create_string(full_name, strlen(full_name));
                 break;
             }

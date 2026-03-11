@@ -128,7 +128,8 @@ static string alloc_big_memory(size_t size) {
 
 static string create_string_check(const char* data, size_t length, bool check) {
     if (!initialized) init();
-    if (data == NULL || length == 0) return 0;
+    if (data == NULL) return 0;
+    if (length == 0) return "";
     if (check) {
         StringList* current = all_string_list;
         string existing = NULL;
@@ -286,12 +287,12 @@ string get_info(void) {
     }
     // max: 47 char
     string struct_memory_used_str = create_string_check("", 48, false);
-    sprintf(struct_memory_used_str, "%zu/%zu bytes", struct_memory_used + struct_memory->used, struct_memory_count);
+    snprintf(struct_memory_used_str, 48, "%zu/%zu bytes", struct_memory_used + struct_memory->used, struct_memory_count);
     // max: 47 char
     string string_memory_used_str = create_string_check("", 48, false);
-    sprintf(string_memory_used_str, "%zu/%zu bytes", string_memory_used + string_memory->used, string_memory_count);
+    snprintf(string_memory_used_str, 48, "%zu/%zu bytes", string_memory_used + string_memory->used, string_memory_count);
     // max: 239 char
     string info = (string)create_string_check("", 240, false);
-    sprintf(info, "Platform: %d, Structure Memory Used: %s, String Memory Used: %s, stringCount: %zu, Memory Block Count: %zu", PLATFORM, struct_memory_used_str, string_memory_used_str, stringCount, memoryBlockCount);
+    snprintf(info, 240, "Platform: %d, Structure Memory Used: %s, String Memory Used: %s, stringCount: %zu, Memory Block Count: %zu", PLATFORM, struct_memory_used_str, string_memory_used_str, stringCount, memoryBlockCount);
     return info;
 }
