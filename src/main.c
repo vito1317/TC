@@ -70,7 +70,6 @@ return 1;
     if (o_sym) {
         printf("Warning: Option '-s' (Output symbol table) is not yet implemented.\n");
     }
-
     // Call parse_file with the appropriate flags
     parse_file(source_file, output_path, o_token, o_ast);
 
