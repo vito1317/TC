@@ -44,7 +44,7 @@ string absolute_path(string path) {
         return path;
     size_t total_len = strlen(cwd) + 1 + path_len + 1;
     string abs_path = create_string("", total_len);
-    sprintf(abs_path, "%s/%s", cwd, path);
+    snprintf(abs_path, total_len + 1, "%s/%s", cwd, path);
     free(cwd);
     return create_string(abs_path, total_len);
 }
@@ -57,7 +57,7 @@ string get_file_extension(File* path) {
     return path->extension;
 }
 
-static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
+static string construct_path_string(StrNode* dirs_head, bool skip_last) {
     if (dirs_head == NULL) return 0;
     if (skip_last && dirs_head->next == NULL) return create_string("", 0);
 
@@ -106,9 +106,8 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
 
             if (!first && strcmp(current->dir, "/") != 0) {
                 // Add separator before non-root components
-                if (ptr > built_path && *(ptr - 1) != '/' && remaining >= len + 2) {
+                if (ptr > built_path && *(ptr - 1) != '/' && remaining > 1) {
                     *ptr++ = '/';
-                    *ptr = '\0';
                     remaining--;
                 }
             }
@@ -116,7 +115,6 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
             if (len < remaining) {
                 memcpy(ptr, current->dir, len);
                 ptr += len;
-                *ptr = '\0';
                 remaining -= len;
             }
             first = false;
@@ -124,12 +122,13 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
         current = current->next;
     }
 
+    *ptr = '\0';
     return create_string(built_path, strlen(built_path));
 }
 
 string get_file_dir(File* path) {
     if (path->dirs == NULL) return 0;
-    return build_path_from_dirs(path->dirs, true);
+    return construct_path_string(path->dirs, true);
 }
 
 string get_full_path(File* path) {
@@ -149,9 +148,9 @@ void change_file_extension(File* file, const string new_extension) {
 
     string new_path = create_string("", path_len + 1);
     if (dir != NULL && strlen(dir_cstr) > 0)
-        sprintf(new_path, "%s/%s", dir_cstr, file->name);
+        snprintf(new_path, path_len + 1, "%s/%s", dir_cstr, file->name);
     else
-        sprintf(new_path, "%s", file->name);
+        snprintf(new_path, path_len + 1, "%s", file->name);
 
     if (new_extension != NULL)
         strcat(new_path, new_extension);
@@ -169,12 +168,9 @@ void change_file_name(File* file, const string new_name) {
         while (current != NULL) {
             if (current->next == NULL) {
                 // This is the last node - update it
-                string ext_cstr = file->extension != NULL ? file->extension : "";
                 size_t full_name_len = strlen(new_name);
-                if (file->extension != NULL) full_name_len += strlen(ext_cstr);
-
                 string full_name = create_string("", full_name_len + 1);
-                sprintf(full_name, "%s%s", new_name, ext_cstr);
+                snprintf(full_name, full_name_len + 1, "%s", new_name);
                 current->dir = create_string(full_name, strlen(full_name));
                 break;
             }
@@ -192,9 +188,9 @@ void change_file_name(File* file, const string new_name) {
 
     string new_path = create_string("", path_len + 1);
     if (dir != NULL && strlen(dir_cstr) > 0)
-        sprintf(new_path, "%s/%s%s", dir_cstr, new_name, ext_cstr);
+        snprintf(new_path, path_len + 1, "%s/%s%s", dir_cstr, new_name, ext_cstr);
     else
-        sprintf(new_path, "%s%s", new_name, ext_cstr);
+        snprintf(new_path, path_len + 1, "%s%s", new_name, ext_cstr);
 
     file->path = create_string(new_path, strlen(new_path));
 }
@@ -318,11 +314,11 @@ void normalize_path(File* file) {
     }
 
     // Rebuild the full path
-    string full_path = build_path_from_dirs(dirs_head, false);
+    string full_path = construct_path_string(dirs_head, false);
     if (full_path != NULL) {
         file->path = create_string(full_path, strlen(full_path));
     } else {
-        fprintf(stderr, "Error: build_path_from_dirs failed to return valid path data in normalize_path\n");
+        fprintf(stderr, "Error: construct_path_string failed to return valid path data in normalize_path\n");
         file->path = create_string("", 0);
     }
 }
