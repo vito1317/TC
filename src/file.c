@@ -101,15 +101,16 @@ size_t remaining = alloc_size;
                 *ptr = '\0';
                 remaining--;
             }
-        }
 
-        if (remaining >= len) {
-            memcpy(ptr, current->dir, len);
-            ptr += len;
-            *ptr = '\0';
-            remaining -= len;
+            if (remaining >= len) {
+                memcpy(ptr, current->dir, len);
+                ptr += len;
+                *ptr = '\0';
+                remaining -= len;
+            }
+            first = false;
         }
-        first = false;
+        current = current->next;
     }
         }
 
