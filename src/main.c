@@ -18,7 +18,7 @@ void print_usage(const char* prog_name) {
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         print_usage(argv[0]);
-        return 1;
+return 1;
     }
 
     string source_file = NULL;
@@ -64,7 +64,6 @@ int main(int argc, char* argv[]) {
         print_usage(argv[0]);
         return 1;
     }
-
     if (o_compiled) {
         printf("Warning: Option '-o' (Output compiled result) is not yet implemented.\n");
     }
