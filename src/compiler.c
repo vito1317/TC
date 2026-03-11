@@ -75,6 +75,7 @@ void output_ast(FILE* file, Lexer* lexer, Parser* parser) {
     fprintf(file, "\ninfo by lib:\n    %s\n", get_info());
 }
 void parse_file(const string name, const string output_path, bool o_token, bool o_ast) {
+    File* file = create_file(name);
     string filename = get_full_path(file);
     size_t length = 0;
     FILE* source_file = fopen(filename, "r");
