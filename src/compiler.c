@@ -87,7 +87,7 @@ void parse_file(const string name, const string output_path, bool o_token, bool 
     fclose(source_file);
     Lexer* lexer = create_lexer(source, length);
     if (o_token) {
-        File* token_file = create_file(name);
+File* token_file = create_file(name);
         if (output_path != NULL && output_path[0] != '\0') {
             string file_name_only = get_file_name(token_file);
             char buffer[1024];
@@ -104,7 +104,7 @@ void parse_file(const string name, const string output_path, bool o_token, bool 
             }
             token_file = create_file(buffer);
         } else {
-            change_file_extension(token_file, create_string(".token", 6));
+change_file_extension(token_file, create_string(".token", 6));
         }
         string out_token_name = get_full_path(token_file);
         FILE* out_token_file = fopen(out_token_name, "w");
@@ -118,7 +118,7 @@ void parse_file(const string name, const string output_path, bool o_token, bool 
     reset_lexer(lexer);
     Parser* parser = create_parser();
     if (o_ast) {
-        File* ast_file = create_file(name);
+File* ast_file = create_file(name);
         if (output_path != NULL && output_path[0] != '\0') {
             string file_name_only = get_file_name(ast_file);
             char buffer[1024];
