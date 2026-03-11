@@ -1,4 +1,5 @@
 #include "file.h"
+#include <stdbool.h>
 
 /**
  * Appends a path component to a buffer and updates the current pointer.
@@ -11,18 +12,23 @@
  *
  * NOTE: The caller MUST ensure the buffer has enough space for component + potential separator + null terminator.
  */
-static void append_path_component(char* base, char** ptr, const char* component, bool is_first) {
+static void append_path_component(char* base, size_t buffer_size, char** ptr, const char* component, bool is_first) {
     if (!is_first && strcmp(component, "/") != 0) {
         // Add separator before non-root components
         if (*ptr > base && *(*ptr - 1) != '/') {
-            *(*ptr)++ = '/';
+            if ((size_t)(*ptr - base) + 1 + 1 <= buffer_size) {
+                *(*ptr)++ = '/';
+                **ptr = '\0';
+            }
         }
     }
 
     size_t len = strlen(component);
-    memcpy(*ptr, component, len);
-    *ptr += len;
-    **ptr = '\0';
+    if ((size_t)(*ptr - base) + len + 1 <= buffer_size) {
+        memcpy(*ptr, component, len);
+        *ptr += len;
+        **ptr = '\0';
+    }
 }
 
 string get_cwd(void) {
@@ -105,7 +111,7 @@ string get_file_dir(File* path) {
     bool first = true;
     while (current != NULL) {
         if (current->next != NULL) {  // Not the last element
-            append_path_component(dir_path, &ptr, current->dir, first);
+            append_path_component(dir_path, total_len + 1, &ptr, current->dir, first);
             first = false;
         }
         current = current->next;
@@ -281,7 +287,7 @@ void normalize_path(File* file) {
     current = dirs_head;
     bool is_first = true;
     while (current != NULL) {
-        append_path_component(full_path, &ptr, current->dir, is_first);
+        append_path_component(full_path, full_path_len + 1, &ptr, current->dir, is_first);
         is_first = false;
         current = current->next;
     }
