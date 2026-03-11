@@ -277,6 +277,9 @@ bool string_equal(string a, string b) {
     return a == b;
 }
 
+#define MEM_USED_STR_MAX 48
+#define INFO_STR_MAX 240
+
 string get_info(void) {
     size_t stringCount = 0;
     StringList* current = all_string_list;
@@ -285,13 +288,19 @@ string get_info(void) {
         current = current->next;
     }
     // max: 47 char
-    string struct_memory_used_str = create_string_check("", 48, false);
-    snprintf(struct_memory_used_str, 48, "%zu/%zu bytes", struct_memory_used + struct_memory->used, struct_memory_count);
+    string struct_memory_used_str = create_string_check("", MEM_USED_STR_MAX, false);
+    if (snprintf(struct_memory_used_str, MEM_USED_STR_MAX + 1, "%zu/%zu bytes", struct_memory_used + struct_memory->used, struct_memory_count) >= (int)(MEM_USED_STR_MAX + 1)) {
+        // Truncation is acceptable for info reporting, but let's be safe
+    }
     // max: 47 char
-    string string_memory_used_str = create_string_check("", 48, false);
-    snprintf(string_memory_used_str, 48, "%zu/%zu bytes", string_memory_used + string_memory->used, string_memory_count);
+    string string_memory_used_str = create_string_check("", MEM_USED_STR_MAX, false);
+    if (snprintf(string_memory_used_str, MEM_USED_STR_MAX + 1, "%zu/%zu bytes", string_memory_used + string_memory->used, string_memory_count) >= (int)(MEM_USED_STR_MAX + 1)) {
+        // Truncation is acceptable for info reporting, but let's be safe
+    }
     // max: 239 char
-    string info = (string)create_string_check("", 240, false);
-    snprintf(info, 240, "Platform: %d, Structure Memory Used: %s, String Memory Used: %s, stringCount: %zu, Memory Block Count: %zu", PLATFORM, struct_memory_used_str, string_memory_used_str, stringCount, memoryBlockCount);
+    string info = (string)create_string_check("", INFO_STR_MAX, false);
+    if (snprintf(info, INFO_STR_MAX + 1, "Platform: %d, Structure Memory Used: %s, String Memory Used: %s, stringCount: %zu, Memory Block Count: %zu", PLATFORM, struct_memory_used_str, string_memory_used_str, stringCount, memoryBlockCount) >= (int)(INFO_STR_MAX + 1)) {
+        // Truncation is acceptable for info reporting, but let's be safe
+    }
     return info;
 }

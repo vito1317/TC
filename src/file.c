@@ -44,7 +44,10 @@ string absolute_path(string path) {
         return path;
     size_t total_len = strlen(cwd) + 1 + path_len + 1;
     string abs_path = create_string("", total_len);
-    snprintf(abs_path, total_len, "%s/%s", cwd, path);
+    if (snprintf(abs_path, total_len + 1, "%s/%s", cwd, path) >= (int)(total_len + 1)) {
+        fprintf(stderr, "Fatal: Path truncation in absolute_path\n");
+        exit(1);
+    }
     free(cwd);
     return create_string(abs_path, total_len);
 }
@@ -117,13 +120,16 @@ void change_file_extension(File* file, const string new_extension) {
     if (new_extension != NULL) path_len += strlen(ext_cstr);
 
     string new_path = create_string("", path_len + 1);
+    int written;
     if (dir != NULL && strlen(dir_cstr) > 0)
-        snprintf(new_path, path_len + 1, "%s/%s", dir_cstr, file->name);
+        written = snprintf(new_path, path_len + 2, "%s/%s%s", dir_cstr, file->name, ext_cstr);
     else
-        snprintf(new_path, path_len + 1, "%s", file->name);
+        written = snprintf(new_path, path_len + 2, "%s%s", file->name, ext_cstr);
 
-    if (new_extension != NULL)
-        strcat(new_path, new_extension);
+    if (written >= (int)(path_len + 2)) {
+        fprintf(stderr, "Fatal: Path truncation in change_file_extension\n");
+        exit(1);
+    }
 
     file->path = create_string(new_path, strlen(new_path));
 }
@@ -143,7 +149,10 @@ void change_file_name(File* file, const string new_name) {
                 if (file->extension != NULL) full_name_len += strlen(ext_cstr);
 
                 string full_name = create_string("", full_name_len + 1);
-                snprintf(full_name, full_name_len + 1, "%s%s", new_name, ext_cstr);
+                if (snprintf(full_name, full_name_len + 2, "%s%s", new_name, ext_cstr) >= (int)(full_name_len + 2)) {
+                    fprintf(stderr, "Fatal: Name truncation in change_file_name\n");
+                    exit(1);
+                }
                 current->dir = create_string(full_name, strlen(full_name));
                 break;
             }
@@ -160,10 +169,16 @@ void change_file_name(File* file, const string new_name) {
     if (file->extension != NULL) path_len += strlen(ext_cstr);
 
     string new_path = create_string("", path_len + 1);
+    int written;
     if (dir != NULL && strlen(dir_cstr) > 0)
-        snprintf(new_path, path_len + 1, "%s/%s%s", dir_cstr, new_name, ext_cstr);
+        written = snprintf(new_path, path_len + 2, "%s/%s%s", dir_cstr, new_name, ext_cstr);
     else
-        snprintf(new_path, path_len + 1, "%s%s", new_name, ext_cstr);
+        written = snprintf(new_path, path_len + 2, "%s%s", new_name, ext_cstr);
+
+    if (written >= (int)(path_len + 2)) {
+        fprintf(stderr, "Fatal: Path truncation in change_file_name\n");
+        exit(1);
+    }
 
     file->path = create_string(new_path, strlen(new_path));
 }
