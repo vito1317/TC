@@ -128,7 +128,8 @@ static string alloc_big_memory(size_t size) {
 
 static string create_string_check(const char* data, size_t length, bool check) {
     if (!initialized) init();
-    if (data == NULL || length == 0) return 0;
+    if (data == NULL) return 0;
+    if (length == 0) return "";
     if (check) {
         StringList* current = all_string_list;
         string existing = NULL;
