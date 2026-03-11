@@ -1,4 +1,5 @@
 #include "file.h"
+#include <stdint.h>
 
 string get_cwd(void) {
 #if PLATFORM == 1
@@ -44,17 +45,14 @@ string absolute_path(string path) {
         return path;
     size_t total_len = strlen(cwd) + 1 + path_len + 1;
     string abs_path = create_string("", total_len);
-    sprintf(abs_path, "%s/%s", cwd, path);
+    snprintf(abs_path, total_len, "%s/%s", cwd, path);
     free(cwd);
     return create_string(abs_path, total_len);
 }
 
-string get_file_name(File* path) {
-    return path->name;
-}
-
-string get_file_extension(File* path) {
-    return path->extension;
+string get_file_extension(File* file) {
+    if (file == NULL) return 0;
+    return file->extension;
 }
 
 static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
@@ -67,6 +65,8 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
     while (current != NULL) {
         if (!skip_last || current->next != NULL) {
             size_t dir_len = strlen(current->dir);
+            // Protect against extremely long path overflow
+            if (SIZE_MAX - total_len < dir_len) return 0;
             total_len += dir_len;
             node_count++;
         }
@@ -76,15 +76,18 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
     if (node_count == 0) return 0;
 
     // Add space for separators
-    if (node_count > 1)
+if (node_count > 1) {
+        if (SIZE_MAX - total_len < node_count - 1) return 0;
+    }
         total_len += node_count - 1;
+    }
 
     // Allocate buffer with exact size + 1 for null terminator
     size_t alloc_size = total_len + 1;
     string built_path = create_string("", alloc_size);
     char* ptr = built_path;
     *ptr = '\0';
-    size_t remaining = alloc_size;
+size_t remaining = alloc_size;
 
     current = dirs_head;
     bool first = true;
@@ -98,6 +101,16 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
                 *ptr = '\0';
                 remaining--;
             }
+        }
+
+        if (remaining >= len) {
+            memcpy(ptr, current->dir, len);
+            ptr += len;
+            *ptr = '\0';
+            remaining -= len;
+        }
+        first = false;
+    }
         }
 
         if (len < remaining) {
@@ -124,10 +137,17 @@ static string build_path_from_dirs(StrNode* dirs_head, bool skip_last) {
 string get_file_dir(File* path) {
     if (path->dirs == NULL) return 0;
     return build_path_from_dirs(path->dirs, true);
+string get_file_name(File* path) {
+    if (path == NULL || path->name == NULL) return create_string("", 0);
+    return create_string(path->name, strlen(path->name));
+}
 }
 
 string get_full_path(File* path) {
-    return path->path;
+    if (path == NULL || path->path == NULL) {
+        return create_string("", 0);
+    }
+    return create_string(path->path, strlen(path->path));
 }
 
 void change_file_extension(File* file, const string new_extension) {
@@ -143,9 +163,9 @@ void change_file_extension(File* file, const string new_extension) {
 
     string new_path = create_string("", path_len + 1);
     if (dir != NULL && strlen(dir_cstr) > 0)
-        sprintf(new_path, "%s/%s", dir_cstr, file->name);
+        snprintf(new_path, path_len + 1, "%s/%s", dir_cstr, file->name);
     else
-        sprintf(new_path, "%s", file->name);
+        snprintf(new_path, path_len + 1, "%s", file->name);
 
     if (new_extension != NULL)
         strcat(new_path, new_extension);
@@ -168,7 +188,7 @@ void change_file_name(File* file, const string new_name) {
                 if (file->extension != NULL) full_name_len += strlen(ext_cstr);
 
                 string full_name = create_string("", full_name_len + 1);
-                sprintf(full_name, "%s%s", new_name, ext_cstr);
+                snprintf(full_name, full_name_len + 1, "%s%s", new_name, ext_cstr);
                 current->dir = create_string(full_name, strlen(full_name));
                 break;
             }
@@ -186,9 +206,9 @@ void change_file_name(File* file, const string new_name) {
 
     string new_path = create_string("", path_len + 1);
     if (dir != NULL && strlen(dir_cstr) > 0)
-        sprintf(new_path, "%s/%s%s", dir_cstr, new_name, ext_cstr);
+        snprintf(new_path, path_len + 1, "%s/%s%s", dir_cstr, new_name, ext_cstr);
     else
-        sprintf(new_path, "%s%s", new_name, ext_cstr);
+        snprintf(new_path, path_len + 1, "%s%s", new_name, ext_cstr);
 
     file->path = create_string(new_path, strlen(new_path));
 }
