@@ -9,15 +9,32 @@ int main() {
     init();
 
     int num_components = 20000;
-    size_t path_max_len = num_components * 10 + 100;
-    string path = create_string("", path_max_len);
+    size_t alloc_size = num_components * 6 + 100;
+    char* path = malloc(alloc_size);
+    if (!path) {
+        return 1;
+    }
     path[0] = '\0';
 
-    strcat(path, "/root");
-    for (int i = 0; i < num_components; i++) {
-        strcat(path, "/comp");
+    char* ptr = path;
+    int remaining = alloc_size;
+
+    int written = snprintf(ptr, remaining, "/root");
+    if (written > 0 && written < remaining) {
+        ptr += written;
+        remaining -= written;
     }
-    strcat(path, "/file.txt");
+
+    for (int i = 0; i < num_components; i++) {
+        written = snprintf(ptr, remaining, "/comp");
+        if (written > 0 && written < remaining) {
+            ptr += written;
+            remaining -= written;
+        } else {
+            break;
+        }
+    }
+    snprintf(ptr, remaining, "/file.txt");
 
     printf("Benchmarking with %d components...\n", num_components);
 
@@ -34,12 +51,12 @@ int main() {
     // Benchmark get_file_dir
     start = clock();
     for (int i = 0; i < 100; i++) {
-        volatile string dir = get_file_dir(file);
-        (void)dir;
+        string dir = get_file_dir(file);
     }
     end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("get_file_dir (100 iterations) took %f seconds\n", cpu_time_used);
 
+    free(path);
     return 0;
 }
