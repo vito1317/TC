@@ -87,8 +87,26 @@ void parse_file(const string name, bool o_token, bool o_ast) {
     fclose(source_file);
     Lexer* lexer = create_lexer(source, length);
     if (o_token) {
-        change_file_extension(file, create_string(".token", 6));
-        string out_token_name = get_full_path(file);
+File* token_file = file;
+        if (output_path != NULL && output_path[0] != '\0') {
+            string file_name_only = get_file_name(token_file);
+            char buffer[1024];
+            size_t out_len = strlen(output_path);
+            int written;
+            if (output_path[out_len - 1] == '/' || output_path[out_len - 1] == '\\') {
+                written = snprintf(buffer, sizeof(buffer), "%s%s.token", output_path, file_name_only);
+            } else {
+                written = snprintf(buffer, sizeof(buffer), "%s/%s.token", output_path, file_name_only);
+            }
+            if (written < 0 || (size_t)written >= sizeof(buffer)) {
+                fprintf(stderr, "Error: Token output path too long.\n");
+                return;
+            }
+            token_file = create_file(buffer);
+        } else {
+            change_file_extension(token_file, create_string(".token", 6));
+        }
+        string out_token_name = get_full_path(token_file);
         FILE* out_token_file = fopen(out_token_name, "w");
         if (out_token_file == NULL)
             fprintf(stderr, "Error opening file: %s\n", out_token_name);
@@ -100,8 +118,26 @@ void parse_file(const string name, bool o_token, bool o_ast) {
     reset_lexer(lexer);
     Parser* parser = create_parser();
     if (o_ast) {
-        change_file_extension(file, create_string(".ast", 4));
-        string out_ast_name = get_full_path(file);
+File* ast_file = file;
+        if (output_path != NULL && output_path[0] != '\0') {
+            string file_name_only = get_file_name(ast_file);
+            char buffer[1024];
+            size_t out_len = strlen(output_path);
+            int written;
+            if (output_path[out_len - 1] == '/' || output_path[out_len - 1] == '\\') {
+                written = snprintf(buffer, sizeof(buffer), "%s%s.ast", output_path, file_name_only);
+            } else {
+                written = snprintf(buffer, sizeof(buffer), "%s/%s.ast", output_path, file_name_only);
+            }
+            if (written < 0 || (size_t)written >= sizeof(buffer)) {
+                fprintf(stderr, "Error: AST output path too long.\n");
+                return;
+            }
+            ast_file = create_file(buffer);
+        } else {
+            change_file_extension(ast_file, create_string(".ast", 4));
+        }
+        string out_ast_name = get_full_path(ast_file);
         FILE* out_ast_file = fopen(out_ast_name, "w");
         if (out_ast_file == NULL)
             fprintf(stderr, "Error opening file: %s\n", out_ast_name);
